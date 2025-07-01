@@ -50,23 +50,25 @@ process.on('uncaughtException', (error) => {
 
 
 
+// Move server declaration to the top, before any other code
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 const database = require('./config/database');
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const storageRoutes = require('./routes/storage');
-const telegramService = require('./services/telegramService');
-const responseTime = require('./middleware/responseTime');
-const processManager = require('./utils/processManager');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const path = require('path');
+
+// Initialize server variable at the top
+// let server = null;
 
 // Add this line to serve frontend files
 app.use(express.static(path.join(__dirname, '../../frontend')));
@@ -238,7 +240,7 @@ process.on('unhandledRejection', (reason, promise) => {
     gracefulShutdown('UNHANDLED_REJECTION');
 });
 
-// Graceful shutdown function
+// Graceful shutdown function (fixed)
 async function gracefulShutdown(signal) {
     console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
     
@@ -250,14 +252,10 @@ async function gracefulShutdown(signal) {
             });
         }
         
-        // Clean up process manager
-        processManager.cleanup();
-        
-        // Clean up Telegram clients
-        await telegramService.cleanup();
-        
         // Close database connection
-        await database.close();
+        if (database) {
+            await database.close();
+        }
         
         console.log('Graceful shutdown completed');
         process.exit(0);
@@ -267,36 +265,17 @@ async function gracefulShutdown(signal) {
     }
 }
 
-// Handle shutdown signals
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-
-// Start server
-let server;
+// Start server function
 async function start() {
     try {
+        // Connect to database first
         await database.connect();
         
-        server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV}`);
-            console.log(`Process ID: ${process.pid}`);
-            console.log(`Health check: http://localhost:${PORT}/health`);
-        });
-        
-        // Set server timeout
-        server.timeout = 65000; // 65 seconds (longer than request timeouts)
-        server.keepAliveTimeout = 5000; // 5 seconds
-        server.headersTimeout = 6000; // 6 seconds
-        
-        // Handle server errors
-        server.on('error', (error) => {
-            console.error('Server error:', error);
-        });
-        
-        server.on('clientError', (err, socket) => {
-            console.warn('Client error:', err.message);
-            socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+        // Then start the server
+        server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 CloudVault Server running on port ${PORT}`);
+            console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🔗 Database: PostgreSQL`);
         });
         
         return server;
@@ -306,6 +285,21 @@ async function start() {
     }
 }
 
+// Error handlers
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// Start the application
 start().catch(error => {
     console.error('Server startup failed:', error);
     process.exit(1);
