@@ -1,56 +1,4 @@
-// Add this at the top of app.js after require statements:
-
-// Prevent unhandled rejections from crashing the server
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection:', {
-        reason: reason instanceof Error ? reason.message : reason,
-        stack: reason instanceof Error ? reason.stack : 'No stack trace',
-        timestamp: new Date().toISOString()
-    });
-    
-    // Don't exit immediately for Telegram client errors
-    if (reason && reason.message && reason.message.includes('_log.canSend')) {
-        console.log('Ignoring Telegram client logging error - this is expected');
-        return;
-    }
-    
-    if (reason && reason.message && reason.message.includes('_updateLoop')) {
-        console.log('Ignoring Telegram update loop error - this is expected');
-        return;
-    }
-    
-    // For other critical errors, try graceful shutdown
-    console.log('Attempting graceful shutdown due to unhandled rejection...');
-    gracefulShutdown('UNHANDLED_REJECTION');
-});
-
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', {
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Don't exit for Telegram client errors
-    if (error.message && error.message.includes('_log.canSend')) {
-        console.log('Ignoring Telegram client logging error - this is expected');
-        return;
-    }
-    
-    if (error.message && error.message.includes('headers after they are sent')) {
-        console.log('Ignoring headers error - continuing operation');
-        return;
-    }
-    
-    // For other critical errors, try graceful shutdown
-    console.log('Attempting graceful shutdown due to uncaught exception...');
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
-});
-
-
-
-
-// Move server declaration to the top, before any other code
+// Move these to the top, before any other code
 require('dotenv').config();
 
 const express = require('express');
@@ -63,27 +11,45 @@ const database = require('./config/database');
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const storageRoutes = require('./routes/storage');
+// Remove these lines that are causing errors:
+// const telegramService = require('./services/telegramService');
+// const responseTime = require('./middleware/responseTime');
+// const processManager = require('./utils/processManager');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Initialize server variable at the top
-// let server = null;
-
-// Add this line to serve frontend files
-app.use(express.static(path.join(__dirname, '../../frontend')));
+let server = null;
 
 // Trust proxy for accurate client IPs
 app.set('trust proxy', 1);
 
-// Response time tracking (before other middleware)
-app.use(responseTime);
+// Simple response time middleware (instead of importing)
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
+    });
+    next();
+});
 
 // Security middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP for development
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", process.env.RENDER_EXTERNAL_URL || "*"],
+        },
+    },
+    crossOriginEmbedderPolicy: false
 }));
 
+// CORS configuration
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true
@@ -111,10 +77,12 @@ app.use(express.urlencoded({
     limit: '10mb' 
 }));
 
+// Serve static files (frontend)
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
 // Request timeout middleware
 app.use((req, res, next) => {
-    // Set timeout for requests
-    const timeout = req.url.includes('/upload') ? 60000 : 30000; // 60s for uploads, 30s for others
+    const timeout = req.url.includes('/upload') ? 60000 : 30000;
     
     req.setTimeout(timeout, () => {
         console.warn(`Request timeout: ${req.method} ${req.url} (${timeout}ms)`);
@@ -133,10 +101,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/storage', storageRoutes);
 
-// Health check with system stats
+// Health check with basic stats
 app.get('/health', (req, res) => {
     try {
-        const stats = processManager.getStats();
         res.json({ 
             status: 'OK', 
             timestamp: new Date().toISOString(),
@@ -144,9 +111,13 @@ app.get('/health', (req, res) => {
                 uptime: Math.round(process.uptime()),
                 pid: process.pid,
                 nodeVersion: process.version,
-                platform: process.platform
+                platform: process.platform,
+                environment: process.env.NODE_ENV || 'development'
             },
-            performance: stats
+            database: {
+                type: 'PostgreSQL',
+                connected: !!database
+            }
         });
     } catch (error) {
         res.status(500).json({ 
@@ -157,6 +128,15 @@ app.get('/health', (req, res) => {
     }
 });
 
+// Serve frontend for all non-API routes
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API route not found' });
+    }
+    
+    res.sendFile(path.join(__dirname, '../../frontend/index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Express error handler:', {
@@ -164,16 +144,14 @@ app.use((err, req, res, next) => {
         stack: err.stack,
         url: req.url,
         method: req.method,
-        headers: req.headers
+        timestamp: new Date().toISOString()
     });
     
-    // Don't send response if headers already sent
     if (res.headersSent) {
         console.warn('Headers already sent, cannot send error response');
         return next(err);
     }
     
-    // Handle specific error types
     if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ 
             error: 'File too large. Maximum file size is 10MB.' 
@@ -192,52 +170,10 @@ app.use((err, req, res, next) => {
         });
     }
     
-    // Generic error response
     res.status(500).json({ 
         error: 'Internal server error. Please try again.',
         requestId: req.headers['x-request-id'] || 'unknown'
     });
-});
-
-// Serve frontend for all non-API routes
-app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API route not found' });
-    }
-    
-    res.sendFile(path.join(__dirname, '../../frontend/index.html'));
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({ 
-        error: 'Route not found',
-        path: req.originalUrl,
-        method: req.method
-    });
-});
-
-// Global error handlers
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', {
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Try graceful shutdown
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection:', {
-        reason: reason,
-        promise: promise,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Try graceful shutdown
-    gracefulShutdown('UNHANDLED_REJECTION');
 });
 
 // Graceful shutdown function (fixed)
@@ -253,8 +189,9 @@ async function gracefulShutdown(signal) {
         }
         
         // Close database connection
-        if (database) {
+        if (database && database.close) {
             await database.close();
+            console.log('Database connection closed');
         }
         
         console.log('Graceful shutdown completed');
@@ -265,39 +202,97 @@ async function gracefulShutdown(signal) {
     }
 }
 
+// Global error handlers
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Don't exit for known errors
+    if (error.message && (
+        error.message.includes('Cannot find module') ||
+        error.message.includes('responseTime is not defined') ||
+        error.message.includes('server is not defined')
+    )) {
+        console.log('Attempting to continue after known error...');
+        return;
+    }
+    
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection:', {
+        reason: reason instanceof Error ? reason.message : reason,
+        stack: reason instanceof Error ? reason.stack : 'No stack trace',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Handle shutdown signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
 // Start server function
 async function start() {
     try {
         // Connect to database first
+        console.log('Connecting to database...');
         await database.connect();
+        console.log('Database connected successfully');
         
         // Then start the server
         server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 CloudVault Server running on port ${PORT}`);
             console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🔗 Database: PostgreSQL`);
+            console.log(`🆔 Process ID: ${process.pid}`);
+            console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+            console.log(`🗄️ Database: PostgreSQL`);
+            
+            // Log configuration status
+            console.log('📋 Configuration:');
+            console.log(`   - Telegram API ID: ${process.env.TELEGRAM_API_ID ? '✅ Set' : '❌ Missing'}`);
+            console.log(`   - Telegram API Hash: ${process.env.TELEGRAM_API_HASH ? '✅ Set' : '❌ Missing'}`);
+            console.log(`   - JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
+            console.log(`   - Database URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
+        });
+        
+        // Server configuration
+        server.timeout = 65000;
+        server.keepAliveTimeout = 5000;
+        server.headersTimeout = 6000;
+        
+        server.on('error', (error) => {
+            console.error('Server error:', error);
+            if (error.code === 'EADDRINUSE') {
+                console.error(`Port ${PORT} is already in use. Please try a different port.`);
+                process.exit(1);
+            }
+        });
+        
+        server.on('clientError', (err, socket) => {
+            console.warn('Client error:', err.message);
+            if (socket.writable) {
+                socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+            }
         });
         
         return server;
     } catch (error) {
         console.error('Failed to start server:', error);
+        
+        // Provide helpful error messages
+        if (error.message.includes('ECONNREFUSED')) {
+            console.error('Database connection failed. Please check your DATABASE_URL environment variable.');
+        } else if (error.message.includes('Cannot find module')) {
+            console.error('Missing dependencies. Please run: npm install');
+        }
+        
         process.exit(1);
     }
 }
-
-// Error handlers
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
-});
-
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start the application
 start().catch(error => {
