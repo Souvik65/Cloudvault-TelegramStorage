@@ -1,0 +1,17 @@
+{
+  "name": "cloudvault-telegram-storage",
+  "version": "1.0.0",
+  "description": "Advanced Telegram storage platform",
+  "main": "backend/src/app.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm install",
+    "postinstall": "cd backend && npm install"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": ["telegram", "storage", "cloud"],
+  "author": "Souvik65",
+  "license": "MIT"
+}

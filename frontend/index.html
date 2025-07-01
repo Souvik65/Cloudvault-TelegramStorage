@@ -1,0 +1,2898 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudVault - Advanced Telegram Storage Platform</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-card h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .login-card p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .app-container {
+            display: none;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #51cf66;
+        }
+
+        .storage-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .toolbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn-telegram {
+            background: linear-gradient(135deg, #0088cc, #0077b5);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffd93d, #ffc107);
+            color: #333;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 25%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background: white;
+            font-size: 12px;
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            min-height: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .breadcrumb {
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.02);
+            font-size: 14px;
+            color: #666;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb a:hover {
+            color: #764ba2;
+        }
+
+        .file-grid {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .file-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .file-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .file-item.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .storage-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+
+        .storage-badge.saved_messages {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-color: #c8e6c9;
+        }
+
+        .storage-badge.private_channel {
+            background: #fff3e0;
+            color: #f57c00;
+            border-color: #ffcc02;
+        }
+
+        .storage-badge.private_group {
+            background: #fce4ec;
+            color: #c2185b;
+            border-color: #f8bbd9;
+        }
+
+        .storage-badge.bot_storage {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            border-color: #e1bee7;
+        }
+
+        .file-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .file-location {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            flex-wrap: wrap;
+        }
+
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone {
+            margin: 30px;
+            border: 2px dashed #ccc;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-zone h3 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .upload-zone p {
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        .auth-step {
+            display: none;
+        }
+
+        .auth-step.active {
+            display: block;
+        }
+
+        .otp-input {
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0088cc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .telegram-info {
+            background: rgba(0, 136, 204, 0.1);
+            border: 1px solid rgba(0, 136, 204, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .telegram-info h4 {
+            color: #0088cc;
+            margin-bottom: 10px;
+        }
+
+        .telegram-info ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .telegram-info li {
+            margin-bottom: 5px;
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(81, 207, 102, 0.1);
+            border: 1px solid rgba(81, 207, 102, 0.2);
+            color: #51cf66;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1001;
+            display: none;
+        }
+
+        .connection-status.online {
+            background: rgba(81, 207, 102, 0.9);
+            color: white;
+        }
+
+        .connection-status.offline {
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+        }
+
+        .preview-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-pdf {
+            width: 100%;
+            height: 60vh;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .preview-video {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 10px;
+        }
+
+        .preview-audio {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .preview-text {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 50vh;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .search-results-header {
+            background: #e3f2fd;
+            padding: 15px 30px;
+            border-bottom: 1px solid #bbdefb;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        /* Storage Settings Styles */
+        .storage-options {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .storage-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .storage-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .storage-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .storage-option input[type="radio"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .storage-option-info {
+            flex: 1;
+        }
+
+        .storage-option-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .storage-option-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .storage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .migration-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .migration-files {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px 0;
+        }
+
+        .migration-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .migration-file:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            background: #e9ecef;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .file-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .login-card {
+                padding: 30px 20px;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 20px;
+            }
+
+            .storage-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Connection Status Indicator -->
+    <div class="connection-status" id="connectionStatus">
+        🌐 Checking connection...
+    </div>
+
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <h1>☁️ CloudVault</h1>
+            <p>Advanced Telegram storage with multiple storage methods</p>
+
+            <div class="telegram-info">
+                <h4>📱 Enhanced Features:</h4>
+                <ul>
+                    <li>Multiple storage methods (Saved Messages, Channels, Groups, Bots)</li>
+                    <li>Auto-create private channels for organized storage</li>
+                    <li>Migrate files between storage methods</li>
+                    <li>Advanced search across all storage locations</li>
+                </ul>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <!-- Step 1: Phone Number -->
+            <div class="auth-step active" id="phoneStep">
+                <div class="form-group">
+                    <label for="loginPhone">Phone Number:</label>
+                    <input type="tel" id="loginPhone" placeholder="+1234567890" required>
+                </div>
+                <button class="btn btn-telegram" onclick="sendOTP()" id="sendOtpBtn">
+                    📱 Send OTP
+                </button>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div class="auth-step" id="otpStep">
+                <div class="form-group">
+                    <label for="otpCode">Enter OTP from Telegram:</label>
+                    <input type="text" id="otpCode" placeholder="12345" class="otp-input" maxlength="6" required>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <small style="color: #666;">
+                        Check your Telegram app for the verification code
+                    </small>
+                </div>
+                <button class="btn btn-telegram" onclick="verifyOTP()" id="verifyOtpBtn">
+                    ✅ Verify & Login
+                </button>
+                <button class="btn btn-secondary" onclick="goBackToPhone()" style="margin-left: 10px;">
+                    ← Back
+                </button>
+            </div>
+
+            <!-- Step 3: 2FA Password (if required) -->
+            <div class="auth-step" id="passwordStep">
+                <div class="form-group">
+                    <label for="twoFaPassword">Two-Factor Password:</label>
+                    <input type="password" id="twoFaPassword" placeholder="Enter your 2FA password" required>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <small style="color: #666;">
+                        Your account has two-factor authentication enabled
+                    </small>
+                </div>
+                <button class="btn btn-telegram" onclick="verifyPassword()" id="verifyPasswordBtn">
+                    🔐 Verify Password
+                </button>
+                <button class="btn btn-secondary" onclick="goBackToOTP()" style="margin-left: 10px;">
+                    ← Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer">
+        <div class="container">
+            <div class="header">
+                <h1>☁️ Cloud Vault</h1>
+                <p>Advanced Telegram storage platform with multiple storage methods</p>
+                <div class="user-info">
+                    <div class="user-details">
+                        <div class="status-indicator"></div>
+                        <span id="userInfo">Connected as: <strong id="userPhone"></strong></span>
+                        <div class="storage-indicator" id="storageIndicator">
+                            <span>📁</span>
+                            <span id="currentStorageMethod">Saved Messages</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="logout()">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="showUploadModal()">
+                    📁 Upload Files
+                </button>
+                <button class="btn btn-secondary" onclick="createFolder()">
+                    🗂️ New Folder
+                </button>
+                <button class="btn btn-success" onclick="openStorageSettings()">
+                    ⚙️ Storage Settings
+                </button>
+                <button class="btn btn-warning" onclick="openMigrationModal()">
+                    🔄 Migrate Files
+                </button>
+                <button class="btn btn-purple" onclick="openStatsModal()">
+                    📊 Statistics
+                </button>
+                <button class="btn btn-secondary" onclick="refreshFiles()">
+                    🔄 Refresh
+                </button>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search files and folders..." id="searchInput"
+                        oninput="searchFiles()">
+                    <div class="search-filters">
+                        <select id="searchType" class="filter-select" onchange="searchFiles()">
+                            <option value="">All Types</option>
+                            <option value="image">Images</option>
+                            <option value="application/pdf">PDFs</option>
+                            <option value="text">Text</option>
+                            <option value="video">Videos</option>
+                            <option value="audio">Audio</option>
+                        </select>
+                        <select id="searchStorage" class="filter-select" onchange="searchFiles()">
+                            <option value="">All Storage</option>
+                            <option value="saved_messages">Saved Messages</option>
+                            <option value="private_channel">Private Channels</option>
+                            <option value="private_group">Private Groups</option>
+                            <option value="bot_storage">Bot Storage</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-danger" onclick="deleteSelected()" id="deleteBtn" style="display: none;">
+                    🗑️ Delete Selected
+                </button>
+            </div>
+
+            <div class="main-content">
+                <div class="breadcrumb" id="breadcrumb">
+                    <a href="#" onclick="navigateToFolder('')">Home</a>
+                </div>
+
+                <div class="search-results-header" id="searchResultsHeader" style="display: none;">
+                    <strong>Search Results</strong> - <span id="searchResultsCount">0 results</span>
+                    <button onclick="clearSearch()"
+                        style="float: right; background: none; border: none; color: #1976d2; cursor: pointer;">Clear
+                        Search</button>
+                </div>
+
+                <div class="upload-zone" id="uploadZone" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)"
+                    ondragleave="dragLeaveHandler(event)">
+                    <h3>Drop files here to upload</h3>
+                    <p>Files will be stored using your preferred storage method</p>
+                    <button class="btn btn-primary"><label for="fileInput">Select Files:</label></button>
+                </div>
+
+                <div class="file-grid" id="fileGrid">
+                    <!-- Files will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simplified Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            <h2>Upload Files</h2>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1976d2;">
+                    <strong>📁 Current Storage Method: <span id="uploadCurrentStorage">Saved Messages</span></strong>
+                </p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">
+                    Files will be uploaded using your preferred storage method. Change it in Storage Settings.
+                </p>
+            </div>
+            <div class="form-group">
+                <label for="fileInput">Select Files:</label>
+                <input type="file" id="fileInput" multiple>
+            </div>
+            <div class="form-group">
+                <label for="fileDescription">Description (Optional):</label>
+                <textarea id="fileDescription" placeholder="Add a description for your files"></textarea>
+            </div>
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="uploadStatus"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="uploadFiles()">Upload Files</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this modal after the other modals -->
+    <div id="deleteFolderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deleteFolderModal')">&times;</span>
+            <h2>🗑️ Delete Folder</h2>
+            <div id="deleteFolderContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('deleteFolderModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmFolderDeletion()" id="confirmDeleteBtn">Delete Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Settings Modal -->
+    <div id="storageSettingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('storageSettingsModal')">&times;</span>
+            <h2>⚙️ Storage Settings</h2>
+
+            <div class="form-group">
+                <label>Current Storage Method:</label>
+                <div id="currentStorageDisplay" class="storage-indicator" style="display: inline-flex;">
+                    <span>📁 Saved Messages</span>
+                </div>
+            </div>
+
+            <div class="storage-options" id="storageOptions">
+                <!-- Storage options will be loaded here -->
+            </div>
+
+            <div class="form-group">
+                <button class="btn btn-success" onclick="createNewChannel()">
+                    ➕ Create New Storage Channel
+                </button>
+                <button class="btn btn-secondary" onclick="refreshStorageOptions()">
+                    🔄 Refresh Options
+                </button>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('storageSettingsModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveStorageSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div id="createChannelModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createChannelModal')">&times;</span>
+            <h2>➕ Create Storage Channel</h2>
+            <div class="form-group">
+                <label for="channelName">Channel Name:</label>
+                <input type="text" id="channelName" placeholder="e.g., My Documents Storage">
+            </div>
+            <div class="form-group">
+                <label for="channelCategory">Category:</label>
+                <select id="channelCategory">
+                    <option value="general">General</option>
+                    <option value="documents">Documents</option>
+                    <option value="images">Images</option>
+                    <option value="videos">Videos</option>
+                    <option value="archives">Archives</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('createChannelModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createChannel()">Create Channel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migration Modal -->
+    <div id="migrationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('migrationModal')">&times;</span>
+            <h2>🔄 Migrate Files</h2>
+
+            <div class="migration-section">
+                <h3>Select Files to Migrate</h3>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="selectAllFiles" onchange="toggleAllFiles()">
+                        <label for="selectAllFiles">Select All</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="selectByStorage" onchange="selectByStorageMethod()">
+                        <label for="selectByStorage">Select by Storage Method</label>
+                    </div>
+                </div>
+
+                <div class="migration-files" id="migrationFiles">
+                    <!-- Files will be loaded here -->
+                </div>
+            </div>
+
+            <div class="migration-section">
+                <h3>Select New Storage Method</h3>
+                <div id="migrationStorageOptions">
+                    <!-- Storage options will be loaded here -->
+                </div>
+            </div>
+
+            <div id="migrationProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="migrationProgressFill"></div>
+                </div>
+                <div id="migrationStatus"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('migrationModal')">Cancel</button>
+                <button class="btn btn-warning" onclick="startMigration()" id="startMigrationBtn">Start
+                    Migration</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('statsModal')">&times;</span>
+            <h2>📊 Storage Statistics</h2>
+
+            <div class="storage-stats" id="storageStats">
+                <!-- Stats will be loaded here -->
+            </div>
+
+            <div id="detailedStats">
+                <!-- Detailed breakdown will be loaded here -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('statsModal')">Close</button>
+                <button class="btn btn-primary" onclick="refreshStats()">Refresh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('previewModal')">&times;</span>
+            <h2 id="previewTitle">File Preview</h2>
+            <div class="preview-container" id="previewContainer">
+                <!-- Preview content will be loaded here -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('previewModal')">Close</button>
+                <button class="btn btn-primary" id="downloadFromPreview">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="renameModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('renameModal')">&times;</span>
+            <h2>Rename Item</h2>
+            <div class="form-group">
+                <label for="newName">New Name:</label>
+                <input type="text" id="newName" placeholder="Enter new name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('renameModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmRename()">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div id="folderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('folderModal')">&times;</span>
+            <h2>Create New Folder</h2>
+            <div class="form-group">
+                <label for="folderName">Folder Name:</label>
+                <input type="text" id="folderName" placeholder="Enter folder name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('folderModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmCreateFolder()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CONFIGURATION AND GLOBALS
+        // ============================================================================
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api'
+        : '/api';
+
+        let currentUser = null;
+        let authToken = null;
+        let fileSystem = {
+            files: [],
+            folders: [],
+            currentPath: ''
+        };
+        let selectedItems = new Set();
+        let currentRenameId = null;
+        let pendingPhoneNumber = null;
+        let isSearchMode = false;
+        let storageOptions = null;
+        let currentStorageConfig = null;
+        let migrationSelectedFiles = new Set();
+
+        // ============================================================================
+        // API UTILITY FUNCTIONS
+        // ============================================================================
+        function getAuthHeaders() {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            return headers;
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const url = `${API_BASE_URL}${endpoint}`;
+                const config = {
+                    headers: getAuthHeaders(),
+                    ...options
+                };
+
+                if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+                    config.body = JSON.stringify(config.body);
+                    config.headers['Content-Type'] = 'application/json';
+                }
+
+                if (config.body instanceof FormData) {
+                    delete config.headers['Content-Type'];
+                }
+
+                const response = await fetch(url, config);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API call failed:', error);
+
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    showConnectionStatus(false);
+                    throw new Error('Unable to connect to server. Please check your internet connection.');
+                }
+
+                throw error;
+            }
+        }
+
+        // ============================================================================
+        // CONNECTION STATUS
+        // ============================================================================
+        function showConnectionStatus(isOnline) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
+            statusEl.textContent = isOnline ? '🌐 Connected' : '🌐 Connection Lost';
+            statusEl.style.display = 'block';
+
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        async function checkConnection() {
+            try {
+                await fetch(`${API_BASE_URL.replace('/api', '')}/health`);
+                showConnectionStatus(true);
+            } catch (error) {
+                showConnectionStatus(false);
+            }
+        }
+
+        // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            document.getElementById('successMessage').style.display = 'none';
+
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 7000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+
+            document.getElementById('errorMessage').style.display = 'none';
+
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function saveAuthData(token, user) {
+            authToken = token;
+            currentUser = user;
+            localStorage.setItem('authToken', token);
+            localStorage.setItem('currentUser', JSON.stringify(user));
+        }
+
+        function loadAuthData() {
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('currentUser');
+
+            if (token && userStr) {
+                try {
+                    authToken = token;
+                    currentUser = JSON.parse(userStr);
+                    return true;
+                } catch (error) {
+                    console.error('Failed to parse stored user data:', error);
+                    clearAuthData();
+                }
+            }
+            return false;
+        }
+
+        function clearAuthData() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function getFileIcon(mimeType) {
+            if (!mimeType) return '📄';
+
+            const type = mimeType.toLowerCase();
+
+            if (type.includes('pdf')) return '📄';
+            if (type.includes('word') || type.includes('document')) return '📝';
+            if (type.includes('sheet') || type.includes('excel')) return '📊';
+            if (type.includes('presentation') || type.includes('powerpoint')) return '📋';
+            if (type.includes('image')) return '🖼️';
+            if (type.includes('video')) return '🎥';
+            if (type.includes('audio')) return '🎵';
+            if (type.includes('zip') || type.includes('archive')) return '📦';
+            if (type.includes('text')) return '📄';
+
+            return '📄';
+        }
+
+        function canPreview(mimeType) {
+            if (!mimeType) return false;
+
+            const previewableTypes = [
+                'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+                'application/pdf',
+                'text/plain', 'text/html', 'text/css', 'text/javascript', 'text/csv',
+                'application/json', 'application/xml',
+                'video/mp4', 'video/webm', 'video/ogg',
+                'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mpeg'
+            ];
+
+            return previewableTypes.includes(mimeType);
+        }
+
+        function getStorageMethodName(method) {
+            const names = {
+                'saved_messages': 'Saved Messages',
+                'private_channel': 'Private Channel',
+                'private_group': 'Private Group',
+                'bot_storage': 'Bot Storage'
+            };
+            return names[method] || method;
+        }
+
+        function getStorageMethodIcon(method) {
+            const icons = {
+                'saved_messages': '💾',
+                'private_channel': '📢',
+                'private_group': '👥',
+                'bot_storage': '🤖'
+            };
+            return icons[method] || '📁';
+        }
+
+        // ============================================================================
+        // AUTHENTICATION FUNCTIONS (Same as before)
+        // ============================================================================
+        async function sendOTP() {
+            const phoneNumber = document.getElementById('loginPhone').value.trim();
+            const sendOtpBtn = document.getElementById('sendOtpBtn');
+
+            if (!phoneNumber) {
+                showError('Please enter your phone number');
+                return;
+            }
+
+            if (!phoneNumber.startsWith('+')) {
+                showError('Please enter phone number with country code (e.g., +1234567890)');
+                return;
+            }
+
+            try {
+                sendOtpBtn.innerHTML = '<div class="loading"></div> Sending OTP...';
+                sendOtpBtn.disabled = true;
+
+                const result = await apiCall('/auth/send-code', {
+                    method: 'POST',
+                    body: { phoneNumber }
+                });
+
+                if (result.success) {
+                    pendingPhoneNumber = phoneNumber;
+                    showSuccess('Verification code sent to your Telegram!');
+                    document.getElementById('phoneStep').classList.remove('active');
+                    document.getElementById('otpStep').classList.add('active');
+                    document.getElementById('otpCode').focus();
+                } else {
+                    throw new Error('Failed to send OTP');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                sendOtpBtn.innerHTML = '📱 Send OTP';
+                sendOtpBtn.disabled = false;
+            }
+        }
+
+        async function verifyOTP() {
+            const otpCode = document.getElementById('otpCode').value.trim();
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+
+            if (!otpCode) {
+                showError('Please enter the OTP code');
+                return;
+            }
+
+            if (!pendingPhoneNumber) {
+                showError('Session expired. Please request a new OTP.');
+                goBackToPhone();
+                return;
+            }
+
+            try {
+                verifyOtpBtn.innerHTML = '<div class="loading"></div> Verifying...';
+                verifyOtpBtn.disabled = true;
+
+                const result = await apiCall('/auth/verify-code', {
+                    method: 'POST',
+                    body: {
+                        phoneNumber: pendingPhoneNumber,
+                        code: otpCode
+                    }
+                });
+
+                if (result.success) {
+                    saveAuthData(result.token, result.user);
+                    showSuccess('Successfully logged in!');
+                    showMainApp();
+                } else if (result.requiresPassword) {
+                    document.getElementById('otpStep').classList.remove('active');
+                    document.getElementById('passwordStep').classList.add('active');
+                    document.getElementById('twoFaPassword').focus();
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                verifyOtpBtn.innerHTML = '✅ Verify & Login';
+                verifyOtpBtn.disabled = false;
+            }
+        }
+
+        async function verifyPassword() {
+            const password = document.getElementById('twoFaPassword').value.trim();
+            const verifyPasswordBtn = document.getElementById('verifyPasswordBtn');
+
+            if (!password) {
+                showError('Please enter your 2FA password');
+                return;
+            }
+
+            if (!pendingPhoneNumber) {
+                showError('Session expired. Please request a new OTP.');
+                goBackToPhone();
+                return;
+            }
+
+            try {
+                verifyPasswordBtn.innerHTML = '<div class="loading"></div> Verifying...';
+                verifyPasswordBtn.disabled = true;
+
+                const result = await apiCall('/auth/verify-password', {
+                    method: 'POST',
+                    body: {
+                        phoneNumber: pendingPhoneNumber,
+                        password: password
+                    }
+                });
+
+                if (result.success) {
+                    saveAuthData(result.token, result.user);
+                    showSuccess('Successfully logged in!');
+                    showMainApp();
+                } else {
+                    throw new Error('Invalid password');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                verifyPasswordBtn.innerHTML = '🔐 Verify Password';
+                verifyPasswordBtn.disabled = false;
+            }
+        }
+
+        function goBackToPhone() {
+            document.getElementById('otpStep').classList.remove('active');
+            document.getElementById('passwordStep').classList.remove('active');
+            document.getElementById('phoneStep').classList.add('active');
+            document.getElementById('otpCode').value = '';
+            document.getElementById('twoFaPassword').value = '';
+            pendingPhoneNumber = null;
+        }
+
+        function goBackToOTP() {
+            document.getElementById('passwordStep').classList.remove('active');
+            document.getElementById('otpStep').classList.add('active');
+            document.getElementById('twoFaPassword').value = '';
+        }
+
+        async function showMainApp() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+
+            // Update user info
+            const userDisplay = `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() +
+                ` (${currentUser.phone})`;
+            document.getElementById('userPhone').textContent = userDisplay;
+
+            // Load storage options and update UI
+            await loadStorageOptions();
+            updateStorageIndicator();
+
+            // Load user files
+            loadFiles();
+        }
+
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await apiCall('/auth/logout', {
+                        method: 'POST'
+                    });
+                } catch (error) {
+                    console.error('Logout API call failed:', error);
+                }
+
+                clearAuthData();
+
+                // Reset UI
+                document.getElementById('appContainer').style.display = 'none';
+                document.getElementById('loginContainer').style.display = 'flex';
+
+                // Reset auth steps
+                document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
+                document.getElementById('phoneStep').classList.add('active');
+
+                // Clear form data and state
+                document.getElementById('loginPhone').value = '';
+                document.getElementById('otpCode').value = '';
+                document.getElementById('twoFaPassword').value = '';
+
+                fileSystem = { files: [], folders: [], currentPath: '' };
+                selectedItems.clear();
+                pendingPhoneNumber = null;
+                isSearchMode = false;
+                storageOptions = null;
+                currentStorageConfig = null;
+                migrationSelectedFiles.clear();
+
+                showSuccess('Logged out successfully');
+            }
+        }
+
+        // ============================================================================
+        // STORAGE MANAGEMENT FUNCTIONS
+        // ============================================================================
+        async function loadStorageOptions() {
+            try {
+                const result = await apiCall('/storage/options');
+                if (result.success) {
+                    storageOptions = result.options;
+                    currentStorageConfig = {
+                        method: result.currentPreference || 'saved_messages',
+                        config: result.currentConfig || {}
+                    };
+                    console.log('Storage options loaded:', storageOptions);
+                    console.log('Current config:', currentStorageConfig);
+                }
+            } catch (error) {
+                console.error('Error loading storage options:', error);
+            }
+        }
+
+        function updateStorageIndicator() {
+            const indicator = document.getElementById('storageIndicator');
+            const methodSpan = document.getElementById('currentStorageMethod');
+
+            if (currentStorageConfig) {
+                const icon = getStorageMethodIcon(currentStorageConfig.method);
+                const name = getStorageMethodName(currentStorageConfig.method);
+
+                indicator.innerHTML = `<span>${icon}</span><span>${name}</span>`;
+            }
+        }
+
+        async function openStorageSettings() {
+            await loadStorageOptions();
+            displayStorageOptions();
+            document.getElementById('storageSettingsModal').style.display = 'block';
+        }
+
+        function displayStorageOptions() {
+            const container = document.getElementById('storageOptions');
+            if (!storageOptions) return;
+
+            let html = '';
+
+            // Saved Messages (always available)
+            const isSavedSelected = currentStorageConfig.method === 'saved_messages';
+            html += `
+                <div class="storage-option ${isSavedSelected ? 'selected' : ''}" data-method="saved_messages" data-chat-id="me">
+                    <input type="radio" name="storageMethod" value="saved_messages" ${isSavedSelected ? 'checked' : ''}>
+                    <div class="storage-option-info">
+                        <div class="storage-option-title">💾 Saved Messages</div>
+                        <div class="storage-option-desc">Store files in your Telegram Saved Messages (Default & Recommended)</div>
+                    </div>
+                </div>
+            `;
+
+            // Private Channels
+            storageOptions.channels.forEach(channel => {
+                if (channel.canPost) {
+                    const isSelected = currentStorageConfig.method === 'private_channel' &&
+                        currentStorageConfig.config.chatId === channel.id;
+                    html += `
+                        <div class="storage-option ${isSelected ? 'selected' : ''}" data-method="private_channel" data-chat-id="${channel.id}">
+                            <input type="radio" name="storageMethod" value="private_channel" ${isSelected ? 'checked' : ''}>
+                            <div class="storage-option-info">
+                                <div class="storage-option-title">📢 ${channel.name}</div>
+                                <div class="storage-option-desc">${channel.description} ${channel.isAutoCreated ? '(Auto-created)' : ''}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Private Groups
+            storageOptions.groups.forEach(group => {
+                if (group.canPost) {
+                    const isSelected = currentStorageConfig.method === 'private_group' &&
+                        currentStorageConfig.config.chatId === group.id;
+                    html += `
+                        <div class="storage-option ${isSelected ? 'selected' : ''}" data-method="private_group" data-chat-id="${group.id}">
+                            <input type="radio" name="storageMethod" value="private_group" ${isSelected ? 'checked' : ''}>
+                            <div class="storage-option-info">
+                                <div class="storage-option-title">👥 ${group.name}</div>
+                                <div class="storage-option-desc">${group.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Bots
+            storageOptions.bots.forEach(bot => {
+                const isSelected = currentStorageConfig.method === 'bot_storage' &&
+                    currentStorageConfig.config.botUsername === bot.username;
+                html += `
+                    <div class="storage-option ${isSelected ? 'selected' : ''}" data-method="bot_storage" data-bot-username="${bot.username}">
+                        <input type="radio" name="storageMethod" value="bot_storage" ${isSelected ? 'checked' : ''}>
+                        <div class="storage-option-info">
+                            <div class="storage-option-title">🤖 ${bot.name}</div>
+                            <div class="storage-option-desc">${bot.description}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Add click handlers
+            document.querySelectorAll('.storage-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    document.querySelectorAll('.storage-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                });
+            });
+
+            // Update current storage display
+            const currentDisplay = document.getElementById('currentStorageDisplay');
+            if (currentStorageConfig) {
+                const icon = getStorageMethodIcon(currentStorageConfig.method);
+                const name = getStorageMethodName(currentStorageConfig.method);
+                currentDisplay.innerHTML = `<span>${icon} ${name}</span>`;
+            }
+        }
+
+        async function saveStorageSettings() {
+            const selectedOption = document.querySelector('input[name="storageMethod"]:checked');
+            if (!selectedOption) {
+                showError('Please select a storage method');
+                return;
+            }
+
+            const method = selectedOption.value;
+            const optionElement = selectedOption.closest('.storage-option');
+            const chatId = optionElement.dataset.chatId;
+            const botUsername = optionElement.dataset.botUsername;
+
+            try {
+                const result = await apiCall('/storage/settings', {
+                    method: 'POST',
+                    body: {
+                        method: method,
+                        chatId: chatId,
+                        botUsername: botUsername
+                    }
+                });
+
+                if (result.success) {
+                    currentStorageConfig = {
+                        method: method,
+                        config: { chatId: chatId, botUsername: botUsername }
+                    };
+                    updateStorageIndicator();
+                    showSuccess('Storage settings saved successfully!');
+                    closeModal('storageSettingsModal');
+                } else {
+                    throw new Error('Failed to save settings');
+                }
+            } catch (error) {
+                showError('Failed to save settings: ' + error.message);
+            }
+        }
+
+        async function createNewChannel() {
+            document.getElementById('storageSettingsModal').style.display = 'none';
+            document.getElementById('createChannelModal').style.display = 'block';
+        }
+
+        async function createChannel() {
+            const channelName = document.getElementById('channelName').value.trim();
+            const category = document.getElementById('channelCategory').value;
+
+            if (!channelName) {
+                showError('Please enter a channel name');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/storage/create-channel', {
+                    method: 'POST',
+                    body: {
+                        channelName: channelName,
+                        category: category
+                    }
+                });
+
+                if (result.success) {
+                    showSuccess(`Channel "${channelName}" created successfully!`);
+                    closeModal('createChannelModal');
+                    document.getElementById('channelName').value = '';
+                    document.getElementById('channelCategory').value = 'general';
+
+                    // Refresh storage options
+                    await loadStorageOptions();
+
+                    // Reopen storage settings if it was open
+                    if (document.getElementById('storageSettingsModal').style.display === 'none') {
+                        openStorageSettings();
+                    }
+                } else {
+                    throw new Error('Failed to create channel');
+                }
+            } catch (error) {
+                showError('Failed to create channel: ' + error.message);
+            }
+        }
+
+        async function refreshStorageOptions() {
+            await loadStorageOptions();
+            displayStorageOptions();
+            showSuccess('Storage options refreshed!');
+        }
+
+        // ============================================================================
+        // FILE MANAGEMENT FUNCTIONS
+        // ============================================================================
+        async function loadFiles() {
+            try {
+                const result = await apiCall(`/files?folderPath=${encodeURIComponent(fileSystem.currentPath)}`);
+
+                if (result.success) {
+                    fileSystem.files = result.files || [];
+                    fileSystem.folders = result.folders || [];
+                    isSearchMode = false;
+                    hideSearchResultsHeader();
+                    renderFiles();
+                }
+            } catch (error) {
+                console.error('Failed to load files:', error);
+                showError('Failed to load files: ' + error.message);
+            }
+        }
+
+        async function searchFiles() {
+            const query = document.getElementById('searchInput').value.trim();
+            const fileType = document.getElementById('searchType').value;
+            const storageMethod = document.getElementById('searchStorage').value;
+
+            if (!query) {
+                if (isSearchMode) {
+                    clearSearch();
+                }
+                return;
+            }
+
+            try {
+                isSearchMode = true;
+                let searchUrl = `/files/search?q=${encodeURIComponent(query)}`;
+                if (fileType) searchUrl += `&type=${encodeURIComponent(fileType)}`;
+                if (storageMethod) searchUrl += `&storage=${encodeURIComponent(storageMethod)}`;
+
+                const result = await apiCall(searchUrl);
+
+                if (result.success) {
+                    fileSystem.files = result.files || [];
+                    fileSystem.folders = result.folders || [];
+                    showSearchResultsHeader(query, result.files.length + result.folders.length);
+                    renderFiles();
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+                showError('Search failed: ' + error.message);
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchType').value = '';
+            document.getElementById('searchStorage').value = '';
+            isSearchMode = false;
+            hideSearchResultsHeader();
+            loadFiles();
+        }
+
+        function showSearchResultsHeader(query, count) {
+            const header = document.getElementById('searchResultsHeader');
+            const countSpan = document.getElementById('searchResultsCount');
+            countSpan.textContent = `${count} results for "${query}"`;
+            header.style.display = 'block';
+        }
+
+        function hideSearchResultsHeader() {
+            document.getElementById('searchResultsHeader').style.display = 'none';
+        }
+
+        function renderFiles() {
+            const fileGrid = document.getElementById('fileGrid');
+            const uploadZone = document.getElementById('uploadZone');
+
+            const currentFiles = fileSystem.files;
+            const currentFolders = fileSystem.folders;
+
+            if (currentFiles.length === 0 && currentFolders.length === 0) {
+                if (!isSearchMode) {
+                    uploadZone.style.display = 'block';
+                } else {
+                    uploadZone.style.display = 'none';
+                }
+                fileGrid.innerHTML = `<div class="empty-state"><h3>${isSearchMode ? '🔍 No search results' : '📂 No files here yet'}</h3><p>${isSearchMode ? 'Try a different search term' : 'Upload some files to get started!'}</p></div>`;
+            } else {
+                uploadZone.style.display = 'none';
+                let html = '';
+
+                // Render folders first
+                currentFolders.forEach(folder => {
+                    const isSelected = selectedItems.has(`folder-${folder.id}`);
+                    html += `
+                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('folder-${folder.id}')" ondblclick="navigateToFolder('${folder.folderPath ? folder.folderPath + '/' : ''}${folder.folderName}')">
+                            <span class="file-icon">📁</span>
+                            <div class="file-name">${folder.folderName}</div>
+                            <div class="file-size">Folder</div>
+                            ${folder.folderPath ? `<div class="file-location">📍 ${folder.folderPath}</div>` : ''}
+                            <div class="file-actions">
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFolder(${folder.id})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Render files
+                currentFiles.forEach(file => {
+                    const icon = getFileIcon(file.fileType);
+                    const size = formatFileSize(file.fileSize);
+                    const isPreviewable = canPreview(file.fileType);
+                    const isSelected = selectedItems.has(`file-${file.id}`);
+                    const storageIcon = getStorageMethodIcon(file.storageMethod);
+                    const storageName = getStorageMethodName(file.storageMethod);
+
+                    html += `
+                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('file-${file.id}')">
+                            <div class="storage-badge ${file.storageMethod}" title="Stored in: ${storageName}">
+                                ${storageIcon}
+                            </div>
+                            <span class="file-icon">${icon}</span>
+                            <div class="file-name">${file.fileName}</div>
+                            <div class="file-size">${size}</div>
+                            ${file.folderPath ? `<div class="file-location">📍 ${file.folderPath}</div>` : ''}
+                            <div class="file-actions">
+                                ${isPreviewable ? `<button class="action-btn btn-success" onclick="event.stopPropagation(); previewFile(${file.id})">👁️ Preview</button>` : ''}
+                                <button class="action-btn btn-primary" onclick="event.stopPropagation(); downloadFile(${file.id})">⬇️ Download</button>
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                fileGrid.innerHTML = html;
+            }
+        }
+
+        function selectItem(itemId) {
+            if (selectedItems.has(itemId)) {
+                selectedItems.delete(itemId);
+            } else {
+                selectedItems.add(itemId);
+            }
+
+            renderFiles(); // Re-render to update selection
+
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (deleteBtn) {
+                deleteBtn.style.display = selectedItems.size > 0 ? 'block' : 'none';
+            }
+        }
+
+        function navigateToFolder(path) {
+            fileSystem.currentPath = path.startsWith('/') ? path.substring(1) : path;
+            selectedItems.clear();
+
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+            }
+
+            updateBreadcrumb();
+            loadFiles();
+        }
+
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            if (!breadcrumb) return;
+
+            if (!fileSystem.currentPath) {
+                breadcrumb.innerHTML = '<a href="#" onclick="navigateToFolder(\'\')">Home</a>';
+            } else {
+                const parts = fileSystem.currentPath.split('/').filter(part => part);
+                let html = '<a href="#" onclick="navigateToFolder(\'\')">Home</a>';
+                let currentPath = '';
+
+                parts.forEach(part => {
+                    currentPath += '/' + part;
+                    html += ` > <a href="#" onclick="navigateToFolder('${currentPath}')">${part}</a>`;
+                });
+
+                breadcrumb.innerHTML = html;
+            }
+        }
+
+        // ============================================================================
+        // UPLOAD FUNCTIONS
+        // ============================================================================
+        function showUploadModal() {
+            // Update the current storage display
+            const storageDisplay = document.getElementById('uploadCurrentStorage');
+            if (currentStorageConfig) {
+                const icon = getStorageMethodIcon(currentStorageConfig.method);
+                const name = getStorageMethodName(currentStorageConfig.method);
+                storageDisplay.innerHTML = `${icon} ${name}`;
+            }
+            
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+
+        function toggleStorageOptions() {
+            const checkbox = document.getElementById('useCustomStorage');
+            const options = document.getElementById('uploadStorageOptions');
+            options.style.display = checkbox.checked ? 'block' : 'none';
+        }
+
+        function loadUploadStorageOptions() {
+            if (!storageOptions) return;
+
+            const container = document.getElementById('uploadStorageSelection');
+            let html = '';
+
+            // Saved Messages
+            html += `
+                <div class="storage-option" data-method="saved_messages" data-chat-id="me">
+                    <input type="radio" name="uploadStorageMethod" value="saved_messages" checked>
+                    <div class="storage-option-info">
+                        <div class="storage-option-title">💾 Saved Messages</div>
+                        <div class="storage-option-desc">Default storage method</div>
+                    </div>
+                </div>
+            `;
+
+            // Other options
+            [...storageOptions.channels, ...storageOptions.groups].forEach(option => {
+                if (option.canPost) {
+                    html += `
+                        <div class="storage-option" data-method="${option.type}" data-chat-id="${option.id}">
+                            <input type="radio" name="uploadStorageMethod" value="${option.type}">
+                            <div class="storage-option-info">
+                                <div class="storage-option-title">${getStorageMethodIcon(option.type)} ${option.name}</div>
+                                <div class="storage-option-desc">${option.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            storageOptions.bots.forEach(bot => {
+                html += `
+                    <div class="storage-option" data-method="bot_storage" data-bot-username="${bot.username}">
+                        <input type="radio" name="uploadStorageMethod" value="bot_storage">
+                        <div class="storage-option-info">
+                            <div class="storage-option-title">🤖 ${bot.name}</div>
+                            <div class="storage-option-desc">${bot.description}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Add click handlers
+            document.querySelectorAll('#uploadStorageSelection .storage-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    document.querySelectorAll('#uploadStorageSelection .storage-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                });
+            });
+        }
+
+        // Add this function to the JavaScript section
+
+        async function deleteFolder(id) {
+            if (!confirm('Are you sure you want to delete this folder? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const result = await apiCall(`/files/folders/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (result.success) {
+                    showSuccess('Folder deleted successfully');
+                    selectedItems.delete(`folder-${id}`);
+                    loadFiles(); // Refresh the file list
+                } else {
+                    throw new Error('Failed to delete folder');
+                }
+            } catch (error) {
+                console.error('Delete folder error:', error);
+                showError('Failed to delete folder: ' + error.message);
+            }
+        }
+
+        // Update the deleteSelected function to handle folders
+        async function deleteSelected() {
+            if (selectedItems.size === 0) return;
+            
+            if (confirm(`Are you sure you want to delete ${selectedItems.size} selected item(s)?`)) {
+                try {
+                    let deletedCount = 0;
+                    let errors = [];
+                    
+                    for (const itemId of selectedItems) {
+                        const [type, id] = itemId.split('-');
+                        const numId = parseInt(id);
+                        
+                        try {
+                            if (type === 'file') {
+                                await apiCall(`/files/${numId}`, { method: 'DELETE' });
+                            } else if (type === 'folder') {
+                                await apiCall(`/files/folders/${numId}`, { method: 'DELETE' });
+                            }
+                            deletedCount++;
+                        } catch (error) {
+                            errors.push(`Failed to delete ${type} ${numId}: ${error.message}`);
+                        }
+                    }
+                    
+                    selectedItems.clear();
+                    document.getElementById('deleteBtn').style.display = 'none';
+                    loadFiles();
+                    
+                    if (errors.length > 0) {
+                        showError(`Deleted ${deletedCount} items, but ${errors.length} failed:\n${errors.join('\n')}`);
+                    } else {
+                        showSuccess(`Successfully deleted ${deletedCount} items`);
+                    }
+                } catch (error) {
+                    showError('Failed to delete items: ' + error.message);
+                }
+            }
+        }
+
+        // Update the renderFiles function to properly show delete button for folders
+        function renderFiles() {
+            const fileGrid = document.getElementById('fileGrid');
+            const uploadZone = document.getElementById('uploadZone');
+            
+            const currentFiles = fileSystem.files;
+            const currentFolders = fileSystem.folders;
+            
+            if (currentFiles.length === 0 && currentFolders.length === 0) {
+                if (!isSearchMode) {
+                    uploadZone.style.display = 'block';
+                } else {
+                    uploadZone.style.display = 'none';
+                }
+                fileGrid.innerHTML = `<div class="empty-state"><h3>${isSearchMode ? '🔍 No search results' : '📂 No files here yet'}</h3><p>${isSearchMode ? 'Try a different search term' : 'Upload some files to get started!'}</p></div>`;
+            } else {
+                uploadZone.style.display = 'none';
+                let html = '';
+                
+                // Render folders first
+                currentFolders.forEach(folder => {
+                    const isSelected = selectedItems.has(`folder-${folder.id}`);
+                    html += `
+                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('folder-${folder.id}')" ondblclick="navigateToFolder('${folder.folderPath ? folder.folderPath + '/' : ''}${folder.folderName}')">
+                            <span class="file-icon">📁</span>
+                            <div class="file-name">${folder.folderName}</div>
+                            <div class="file-size">Folder</div>
+                            ${folder.folderPath ? `<div class="file-location">📍 ${folder.folderPath}</div>` : ''}
+                            <div class="file-actions">
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFolder(${folder.id})" title="Delete Folder">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Render files
+                currentFiles.forEach(file => {
+                    const icon = getFileIcon(file.fileType);
+                    const size = formatFileSize(file.fileSize);
+                    const isPreviewable = canPreview(file.fileType);
+                    const isSelected = selectedItems.has(`file-${file.id}`);
+                    const storageIcon = getStorageMethodIcon(file.storageMethod);
+                    const storageName = getStorageMethodName(file.storageMethod);
+                    
+                    html += `
+                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('file-${file.id}')">
+                            <div class="storage-badge ${file.storageMethod}" title="Stored in: ${storageName}">
+                                ${storageIcon}
+                            </div>
+                            <span class="file-icon">${icon}</span>
+                            <div class="file-name">${file.fileName}</div>
+                            <div class="file-size">${size}</div>
+                            ${file.folderPath ? `<div class="file-location">📍 ${file.folderPath}</div>` : ''}
+                            <div class="file-actions">
+                                ${isPreviewable ? `<button class="action-btn btn-success" onclick="event.stopPropagation(); previewFile(${file.id})" title="Preview File">👁️ Preview</button>` : ''}
+                                <button class="action-btn btn-primary" onclick="event.stopPropagation(); downloadFile(${file.id})" title="Download File">⬇️ Download</button>
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})" title="Delete File">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                fileGrid.innerHTML = html;
+            }
+        }
+
+
+        // Update the uploadFiles function to remove manual storage selection
+        async function uploadFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            const description = document.getElementById('fileDescription').value.trim();
+            
+            if (files.length === 0) {
+                showError('Please select files to upload');
+                return;
+            }
+            
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            progressBar.style.display = 'block';
+            uploadStatus.innerHTML = '';
+            
+            try {
+                let uploadedCount = 0;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    uploadStatus.innerHTML = `Uploading ${file.name}... (${i + 1}/${files.length})`;
+                    
+                    const progress = (i / files.length) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('description', description);
+                    formData.append('folderPath', fileSystem.currentPath);
+                    formData.append('useCustomStorage', 'false'); // Always use user's preferred storage
+
+                    const result = await apiCall('/files/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (result.success) {
+                        uploadedCount++;
+                    } else {
+                        throw new Error(`Failed to upload ${file.name}`);
+                    }
+                }
+                
+                progressFill.style.width = '100%';
+                uploadStatus.innerHTML = `✅ Successfully uploaded ${uploadedCount} file(s) using ${getStorageMethodName(currentStorageConfig.method)}!`;
+                
+                setTimeout(() => {
+                    closeModal('uploadModal');
+                    loadFiles();
+                    fileInput.value = '';
+                    document.getElementById('fileDescription').value = '';
+                }, 1500);
+
+            } catch (error) {
+                uploadStatus.innerHTML = `❌ Upload failed: ${error.message}`;
+                showError('Failed to upload files: ' + error.message);
+            }
+        }
+
+        // ============================================================================
+        // FILE OPERATIONS
+        // ============================================================================
+        async function previewFile(id) {
+            try {
+                const file = fileSystem.files.find(f => f.id === id);
+                if (!file) {
+                    showError('File not found');
+                    return;
+                }
+
+                document.getElementById('previewTitle').textContent = `Preview: ${file.fileName}`;
+                document.getElementById('previewContainer').innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading"></div><br>Loading preview...</div>';
+
+                document.getElementById('downloadFromPreview').onclick = () => downloadFile(id);
+                document.getElementById('previewModal').style.display = 'block';
+
+                const response = await fetch(`${API_BASE_URL}/files/${id}/preview`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Preview not available');
+                }
+
+                const contentType = response.headers.get('content-type');
+                const container = document.getElementById('previewContainer');
+
+                if (contentType.startsWith('image/')) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    container.innerHTML = `<img src="${url}" class="preview-image" alt="${file.fileName}">`;
+                } else if (contentType === 'application/pdf') {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    container.innerHTML = `<iframe src="${url}" class="preview-pdf"></iframe>`;
+                } else if (contentType.startsWith('video/')) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    container.innerHTML = `<video src="${url}" class="preview-video" controls></video>`;
+                } else if (contentType.startsWith('audio/')) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    container.innerHTML = `<audio src="${url}" class="preview-audio" controls></audio>`;
+                } else if (contentType.startsWith('text/')) {
+                    const text = await response.text();
+                    container.innerHTML = `<div class="preview-text">${text}</div>`;
+                } else {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">Preview not available for this file type</div>';
+                }
+
+            } catch (error) {
+                console.error('Preview failed:', error);
+                document.getElementById('previewContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">Preview failed: ' + error.message + '</div>';
+            }
+        }
+
+        async function downloadFile(id) {
+            try {
+                const file = fileSystem.files.find(f => f.id === id);
+                if (!file) {
+                    showError('File not found');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/files/${id}/download`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = file.fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showSuccess(`Downloaded ${file.fileName}!`);
+            } catch (error) {
+                console.error('Download failed:', error);
+                showError('Download failed: ' + error.message);
+            }
+        }
+
+        async function deleteFile(id) {
+            if (!confirm('Are you sure you want to delete this file?')) {
+                return;
+            }
+
+            try {
+                const result = await apiCall(`/files/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (result.success) {
+                    showSuccess('File deleted successfully');
+                    selectedItems.delete(`file-${id}`);
+                    loadFiles();
+                } else {
+                    throw new Error('Failed to delete file');
+                }
+            } catch (error) {
+                showError('Failed to delete file: ' + error.message);
+            }
+        }
+
+        async function deleteSelected() {
+            if (selectedItems.size === 0) return;
+
+            if (confirm(`Are you sure you want to delete ${selectedItems.size} selected item(s)?`)) {
+                try {
+                    for (const itemId of selectedItems) {
+                        const [type, id] = itemId.split('-');
+                        const numId = parseInt(id);
+
+                        if (type === 'file') {
+                            await apiCall(`/files/${numId}`, { method: 'DELETE' });
+                        }
+                    }
+
+                    selectedItems.clear();
+                    document.getElementById('deleteBtn').style.display = 'none';
+                    loadFiles();
+                    showSuccess('Selected items deleted successfully');
+                } catch (error) {
+                    showError('Failed to delete items: ' + error.message);
+                }
+            }
+        }
+
+        // ============================================================================
+        // FOLDER OPERATIONS
+        // ============================================================================
+        function createFolder() {
+            document.getElementById('folderModal').style.display = 'block';
+        }
+
+        async function confirmCreateFolder() {
+            const folderName = document.getElementById('folderName').value.trim();
+
+            if (!folderName) {
+                showError('Please enter a folder name');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/files/folders', {
+                    method: 'POST',
+                    body: {
+                        folderName: folderName,
+                        folderPath: fileSystem.currentPath
+                    }
+                });
+
+                if (result.success) {
+                    showSuccess('Folder created successfully');
+                    loadFiles();
+                    closeModal('folderModal');
+                    document.getElementById('folderName').value = '';
+                } else {
+                    throw new Error('Failed to create folder');
+                }
+            } catch (error) {
+                showError('Failed to create folder: ' + error.message);
+            }
+        }
+
+        function refreshFiles() {
+            loadFiles();
+            selectedItems.clear();
+
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+            }
+        }
+
+        // ============================================================================
+        // MIGRATION FUNCTIONS
+        // ============================================================================
+        async function openMigrationModal() {
+            await loadStorageOptions();
+            await loadMigrationFiles();
+            displayMigrationStorageOptions();
+            document.getElementById('migrationModal').style.display = 'block';
+        }
+
+        async function loadMigrationFiles() {
+            try {
+                const result = await apiCall('/files/search?q='); // Get all files
+                if (result.success) {
+                    const container = document.getElementById('migrationFiles');
+                    let html = '';
+
+                    result.files.forEach(file => {
+                        const storageIcon = getStorageMethodIcon(file.storageMethod);
+                        const storageName = getStorageMethodName(file.storageMethod);
+
+                        html += `
+                            <div class="migration-file">
+                                <input type="checkbox" class="migration-file-checkbox" data-file-id="${file.id}" data-storage-method="${file.storageMethod}">
+                                <span>${getFileIcon(file.fileType)}</span>
+                                <div style="flex: 1;">
+                                    <div><strong>${file.fileName}</strong></div>
+                                    <div style="font-size: 12px; color: #666;">
+                                        ${formatFileSize(file.fileSize)} • ${storageIcon} ${storageName}
+                                        ${file.folderPath ? ` • 📍 ${file.folderPath}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html || '<div style="text-align: center; color: #666;">No files found</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load migration files:', error);
+                showError('Failed to load files for migration');
+            }
+        }
+
+        function displayMigrationStorageOptions() {
+            const container = document.getElementById('migrationStorageOptions');
+            if (!storageOptions) return;
+
+            let html = '';
+
+            // Saved Messages
+            html += `
+                <div class="storage-option" data-method="saved_messages" data-chat-id="me">
+                    <input type="radio" name="migrationStorageMethod" value="saved_messages">
+                    <div class="storage-option-info">
+                        <div class="storage-option-title">💾 Saved Messages</div>
+                        <div class="storage-option-desc">Move files to Saved Messages</div>
+                    </div>
+                </div>
+            `;
+
+            // Channels
+            storageOptions.channels.forEach(channel => {
+                if (channel.canPost) {
+                    html += `
+                        <div class="storage-option" data-method="private_channel" data-chat-id="${channel.id}">
+                            <input type="radio" name="migrationStorageMethod" value="private_channel">
+                            <div class="storage-option-info">
+                                <div class="storage-option-title">📢 ${channel.name}</div>
+                                <div class="storage-option-desc">${channel.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Groups
+            storageOptions.groups.forEach(group => {
+                if (group.canPost) {
+                    html += `
+                        <div class="storage-option" data-method="private_group" data-chat-id="${group.id}">
+                            <input type="radio" name="migrationStorageMethod" value="private_group">
+                            <div class="storage-option-info">
+                                <div class="storage-option-title">👥 ${group.name}</div>
+                                <div class="storage-option-desc">${group.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Bots
+            storageOptions.bots.forEach(bot => {
+                html += `
+                    <div class="storage-option" data-method="bot_storage" data-bot-username="${bot.username}">
+                        <input type="radio" name="migrationStorageMethod" value="bot_storage">
+                        <div class="storage-option-info">
+                            <div class="storage-option-title">🤖 ${bot.name}</div>
+                            <div class="storage-option-desc">${bot.description}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Add click handlers
+            document.querySelectorAll('#migrationStorageOptions .storage-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    document.querySelectorAll('#migrationStorageOptions .storage-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                });
+            });
+        }
+
+        function toggleAllFiles() {
+            const selectAll = document.getElementById('selectAllFiles');
+            const checkboxes = document.querySelectorAll('.migration-file-checkbox');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        function selectByStorageMethod() {
+            const selectByStorage = document.getElementById('selectByStorage');
+            if (!selectByStorage.checked) return;
+
+            const storageMethod = prompt('Enter storage method to select (saved_messages, private_channel, private_group, bot_storage):');
+            if (!storageMethod) return;
+
+            const checkboxes = document.querySelectorAll('.migration-file-checkbox');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.dataset.storageMethod === storageMethod) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        async function startMigration() {
+            const selectedFiles = Array.from(document.querySelectorAll('.migration-file-checkbox:checked'))
+                .map(checkbox => parseInt(checkbox.dataset.fileId));
+
+            if (selectedFiles.length === 0) {
+                showError('Please select files to migrate');
+                return;
+            }
+
+            const selectedStorageOption = document.querySelector('input[name="migrationStorageMethod"]:checked');
+            if (!selectedStorageOption) {
+                showError('Please select a destination storage method');
+                return;
+            }
+
+            const storageElement = selectedStorageOption.closest('.storage-option');
+            const newStorageConfig = {
+                method: selectedStorageOption.value,
+                chatId: storageElement.dataset.chatId,
+                botUsername: storageElement.dataset.botUsername
+            };
+
+            const progress = document.getElementById('migrationProgress');
+            const progressFill = document.getElementById('migrationProgressFill');
+            const status = document.getElementById('migrationStatus');
+            const startBtn = document.getElementById('startMigrationBtn');
+
+            try {
+                progress.style.display = 'block';
+                startBtn.disabled = true;
+                startBtn.textContent = 'Migrating...';
+
+                status.textContent = `Starting migration of ${selectedFiles.length} files...`;
+                progressFill.style.width = '0%';
+
+                const result = await apiCall('/storage/migrate', {
+                    method: 'POST',
+                    body: {
+                        fileIds: selectedFiles,
+                        newStorageConfig: newStorageConfig
+                    }
+                });
+
+                if (result.success) {
+                    progressFill.style.width = '100%';
+                    status.innerHTML = `
+                        ✅ Migration completed!<br>
+                        Successfully migrated: ${result.migratedFiles.length} files<br>
+                        ${result.errors.length > 0 ? `Errors: ${result.errors.length} files` : ''}
+                    `;
+
+                    if (result.errors.length > 0) {
+                        console.error('Migration errors:', result.errors);
+                    }
+
+                    setTimeout(() => {
+                        closeModal('migrationModal');
+                        loadFiles(); // Refresh file list
+                    }, 3000);
+                } else {
+                    throw new Error('Migration failed');
+                }
+            } catch (error) {
+                status.textContent = `❌ Migration failed: ${error.message}`;
+                showError('Migration failed: ' + error.message);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Migration';
+            }
+        }
+
+        // ============================================================================
+        // STATISTICS FUNCTIONS
+        // ============================================================================
+        async function openStatsModal() {
+            document.getElementById('statsModal').style.display = 'block';
+            await loadStats();
+        }
+
+        async function loadStats() {
+            try {
+                const result = await apiCall('/files/stats');
+                if (result.success) {
+                    displayStats(result.stats);
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                showError('Failed to load statistics');
+            }
+        }
+
+        function displayStats(stats) {
+            const container = document.getElementById('storageStats');
+            const detailedContainer = document.getElementById('detailedStats');
+
+            // Main stats
+            let html = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalFiles}</div>
+                    <div class="stat-label">Total Files</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${formatFileSize(stats.totalStorage)}</div>
+                    <div class="stat-label">Total Storage</div>
+                </div>
+            `;
+
+            // Storage method breakdown
+            if (stats.storageBreakdown && stats.storageBreakdown.length > 0) {
+                stats.storageBreakdown.forEach(item => {
+                    const icon = getStorageMethodIcon(item.storage_method);
+                    const name = getStorageMethodName(item.storage_method);
+                    html += `
+                        <div class="stat-card">
+                            <div class="stat-number">${item.count}</div>
+                            <div class="stat-label">${icon} ${name}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+
+            // Detailed breakdown
+            let detailedHtml = '<h3>File Type Breakdown</h3>';
+            if (stats.typeBreakdown && stats.typeBreakdown.length > 0) {
+                detailedHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px;">';
+                stats.typeBreakdown.forEach(type => {
+                    detailedHtml += `
+                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                            <div style="font-weight: bold;">${getFileIcon(type.file_type)} ${type.file_type || 'Unknown'}</div>
+                            <div style="color: #666; font-size: 14px;">${type.count} files</div>
+                            <div style="color: #666; font-size: 14px;">${formatFileSize(type.size)}</div>
+                        </div>
+                    `;
+                });
+                detailedHtml += '</div>';
+            }
+
+            detailedContainer.innerHTML = detailedHtml;
+        }
+
+        async function refreshStats() {
+            await loadStats();
+            showSuccess('Statistics refreshed!');
+        }
+
+        // ============================================================================
+        // DRAG AND DROP FUNCTIONALITY
+        // ============================================================================
+        function dragOverHandler(ev) {
+            ev.preventDefault();
+            document.getElementById('uploadZone').classList.add('dragover');
+        }
+
+        function dragLeaveHandler(ev) {
+            document.getElementById('uploadZone').classList.remove('dragover');
+        }
+
+        async function dropHandler(ev) {
+            ev.preventDefault();
+            document.getElementById('uploadZone').classList.remove('dragover');
+
+            const files = ev.dataTransfer.files;
+            if (files.length === 0) return;
+
+            try {
+                for (let file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('folderPath', fileSystem.currentPath);
+                    formData.append('useCustomStorage', 'false');
+
+                    await apiCall('/files/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+
+                showSuccess(`Successfully uploaded ${files.length} file(s)!`);
+                loadFiles();
+            } catch (error) {
+                showError('Failed to upload files: ' + error.message);
+            }
+        }
+
+        // ============================================================================
+        // MODAL FUNCTIONS
+        // ============================================================================
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+
+            if (modalId === 'uploadModal') {
+                const progressBar = document.getElementById('progressBar');
+                const progressFill = document.getElementById('progressFill');
+                const uploadStatus = document.getElementById('uploadStatus');
+
+                if (progressBar) progressBar.style.display = 'none';
+                if (progressFill) progressFill.style.width = '0%';
+                if (uploadStatus) uploadStatus.innerHTML = '';
+            }
+
+            if (modalId === 'migrationModal') {
+                const progress = document.getElementById('migrationProgress');
+                if (progress) progress.style.display = 'none';
+                migrationSelectedFiles.clear();
+            }
+        }
+
+        // ============================================================================
+        // EVENT LISTENERS AND INITIALIZATION
+        // ============================================================================
+
+        // Close modals when clicking outside
+        window.onclick = function (event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Add enter key listeners for forms
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('loginPhone').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') sendOTP();
+            });
+
+            document.getElementById('otpCode').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') verifyOTP();
+            });
+
+            document.getElementById('twoFaPassword').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') verifyPassword();
+            });
+
+            document.getElementById('folderName').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') confirmCreateFolder();
+            });
+
+            document.getElementById('channelName').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') createChannel();
+            });
+        });
+
+        // ============================================================================
+        // APPLICATION INITIALIZATION
+        // ============================================================================
+        async function init() {
+            try {
+                // Check if user is already logged in
+                if (loadAuthData()) {
+                    try {
+                        // Verify token is still valid
+                        const result = await apiCall('/auth/me');
+                        if (result.success) {
+                            currentUser = result.user;
+                            showMainApp();
+                            return;
+                        }
+                    } catch (error) {
+                        console.log('Stored token is invalid, showing login');
+                        clearAuthData();
+                    }
+                }
+
+                // Show login screen
+                document.getElementById('loginContainer').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+
+                // Check server connection
+                await checkConnection();
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Failed to initialize application');
+            }
+        }
+
+        // Start the application
+        init();
+
+        // Check connection periodically
+        setInterval(checkConnection, 30000); // Check every 30 seconds
+    </script>
+</body>
+
+</html>
