@@ -11,10 +11,6 @@ const database = require('./config/database');
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const storageRoutes = require('./routes/storage');
-// Remove these lines that are causing errors:
-// const telegramService = require('./services/telegramService');
-// const responseTime = require('./middleware/responseTime');
-// const processManager = require('./utils/processManager');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,7 +21,7 @@ let server = null;
 // Trust proxy for accurate client IPs
 app.set('trust proxy', 1);
 
-// Simple response time middleware (instead of importing)
+// Simple response time middleware
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -109,17 +105,16 @@ app.get('/health', (req, res) => {
             timestamp: new Date().toISOString(),
             server: {
                 uptime: Math.round(process.uptime()),
-                pid: process.pid,
-                nodeVersion: process.version,
-                platform: process.platform,
-                environment: process.env.NODE_ENV || 'development'
+                memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                pid: process.pid
             },
             database: {
-                type: 'PostgreSQL',
-                connected: !!database
+                type: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite',
+                connected: true
             }
         });
     } catch (error) {
+        console.error('Health check error:', error);
         res.status(500).json({ 
             status: 'ERROR', 
             error: error.message,
@@ -128,81 +123,64 @@ app.get('/health', (req, res) => {
     }
 });
 
-// Serve frontend for all non-API routes
+// Catch-all route for frontend
 app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API route not found' });
-    }
-    
     res.sendFile(path.join(__dirname, '../../frontend/index.html'));
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Express error handler:', {
-        error: err.message,
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        timestamp: new Date().toISOString()
-    });
+// Global error handler
+app.use((error, req, res, next) => {
+    console.error('Global error handler:', error);
     
     if (res.headersSent) {
-        console.warn('Headers already sent, cannot send error response');
-        return next(err);
+        return next(error);
     }
     
-    if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ 
-            error: 'File too large. Maximum file size is 10MB.' 
-        });
-    }
-    
-    if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({ 
-            error: 'Invalid JSON in request body.' 
-        });
-    }
-    
-    if (err.message && err.message.includes('timeout')) {
-        return res.status(408).json({ 
-            error: 'Operation timeout. Please try again.' 
-        });
-    }
-    
-    res.status(500).json({ 
-        error: 'Internal server error. Please try again.',
-        requestId: req.headers['x-request-id'] || 'unknown'
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+        timestamp: new Date().toISOString()
     });
 });
 
-// Graceful shutdown function (fixed)
-async function gracefulShutdown(signal) {
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+    res.status(404).json({
+        error: 'API endpoint not found',
+        path: req.path,
+        method: req.method,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Graceful shutdown handlers
+const gracefulShutdown = async (signal) => {
     console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
     
     try {
-        // Stop accepting new connections
+        // Close HTTP server
         if (server) {
-            server.close(() => {
-                console.log('HTTP server closed');
+            await new Promise((resolve) => {
+                server.close(() => {
+                    console.log('HTTP server closed');
+                    resolve();
+                });
             });
         }
         
         // Close database connection
-        if (database && database.close) {
-            await database.close();
-            console.log('Database connection closed');
-        }
+        await database.close();
+        console.log('Database connection closed');
         
         console.log('Graceful shutdown completed');
         process.exit(0);
     } catch (error) {
-        console.error('Error during shutdown:', error);
+        console.error('Error during graceful shutdown:', error);
         process.exit(1);
     }
-}
+};
 
-// Global error handlers
+// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', {
         message: error.message,
@@ -210,92 +188,62 @@ process.on('uncaughtException', (error) => {
         timestamp: new Date().toISOString()
     });
     
-    // Don't exit for known errors
-    if (error.message && (
-        error.message.includes('Cannot find module') ||
-        error.message.includes('responseTime is not defined') ||
-        error.message.includes('server is not defined')
-    )) {
-        console.log('Attempting to continue after known error...');
-        return;
-    }
-    
+    console.log('Received UNCAUGHT_EXCEPTION. Starting graceful shutdown...');
     gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
+// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection:', {
-        reason: reason instanceof Error ? reason.message : reason,
-        stack: reason instanceof Error ? reason.stack : 'No stack trace',
+        reason: reason,
+        stack: reason instanceof Error ? reason.stack : 'No stack trace available',
         timestamp: new Date().toISOString()
     });
+    
+    console.log('Received UNHANDLED_REJECTION. Starting graceful shutdown...');
+    gracefulShutdown('UNHANDLED_REJECTION');
 });
 
-// Handle shutdown signals
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// Handle termination signals
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server function
-async function start() {
+// Start server
+const startServer = async () => {
     try {
         // Connect to database first
-        console.log('Connecting to database...');
         await database.connect();
-        console.log('Database connected successfully');
         
-        // Then start the server
+        // Start HTTP server
         server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 CloudVault Server running on port ${PORT}`);
             console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🆔 Process ID: ${process.pid}`);
             console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-            console.log(`🗄️ Database: ${database.isPostgreSQL() ? 'PostgreSQL' : 'SQLite'}`);
-            
-            // Log configuration status
-            console.log('📋 Configuration:');
-            console.log(`   - Telegram API ID: ${process.env.TELEGRAM_API_ID ? '✅ Set' : '❌ Missing'}`);
-            console.log(`   - Telegram API Hash: ${process.env.TELEGRAM_API_HASH ? '✅ Set' : '❌ Missing'}`);
-            console.log(`   - JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
-            console.log(`   - Database URL: ${process.env.DATABASE_URL ? '✅ Set (PostgreSQL)' : '❌ Not Set (Using SQLite)'}`);
+            console.log(`🗄️ Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+            console.log(`📋 Configuration:`);
+            console.log(`   - Telegram API ID: ${process.env.TELEGRAM_API_ID ? '✅ Set' : '❌ Not Set'}`);
+            console.log(`   - Telegram API Hash: ${process.env.TELEGRAM_API_HASH ? '✅ Set' : '❌ Not Set'}`);
+            console.log(`   - JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Not Set'}`);
+            console.log(`   - Database URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not Set (Using SQLite)'}`);
         });
-        
-        // Server configuration
-        server.timeout = 65000;
-        server.keepAliveTimeout = 5000;
-        server.headersTimeout = 6000;
-        
+
+        // Handle server errors
         server.on('error', (error) => {
             console.error('Server error:', error);
             if (error.code === 'EADDRINUSE') {
-                console.error(`Port ${PORT} is already in use. Please try a different port.`);
+                console.error(`Port ${PORT} is already in use. Please choose a different port.`);
                 process.exit(1);
             }
         });
-        
-        server.on('clientError', (err, socket) => {
-            console.warn('Client error:', err.message);
-            if (socket.writable) {
-                socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-            }
-        });
-        
-        return server;
+
     } catch (error) {
         console.error('Failed to start server:', error);
-        
-        // Provide helpful error messages
-        if (error.message.includes('ECONNREFUSED')) {
-            console.error('Database connection failed. Please check your DATABASE_URL environment variable.');
-        } else if (error.message.includes('Cannot find module')) {
-            console.error('Missing dependencies. Please run: npm install');
-        }
-        
         process.exit(1);
     }
-}
+};
 
-// Start the application
-start().catch(error => {
-    console.error('Server startup failed:', error);
-    process.exit(1);
-});
+// Start the server
+startServer();
+
+module.exports = app;

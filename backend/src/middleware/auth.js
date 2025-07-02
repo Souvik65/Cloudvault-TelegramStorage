@@ -1,57 +1,31 @@
 const jwt = require('jsonwebtoken');
+const database = require('../config/database');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization;
-        
-        if (!authHeader) {
-            return res.status(401).json({ 
-                error: 'No authorization header provided',
-                code: 'NO_AUTH_HEADER'
-            });
-        }
-
-        const token = authHeader.split(' ')[1]; // Bearer TOKEN
+        const token = req.header('Authorization')?.replace('Bearer ', '');
         
         if (!token) {
-            return res.status(401).json({ 
-                error: 'No token provided',
-                code: 'NO_TOKEN'
-            });
+            return res.status(401).json({ error: 'Access denied. No token provided.' });
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        
+        // Get user from database
+        const user = await database.query(
+            'SELECT * FROM users WHERE id = ?',
+            [decoded.userId]
+        );
+
+        if (!user.rows || user.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid token.' });
+        }
+
+        req.user = user.rows[0];
         next();
     } catch (error) {
-        let errorMessage = 'Invalid token';
-        let errorCode = 'INVALID_TOKEN';
-        
-        if (error.name === 'JsonWebTokenError') {
-            if (error.message === 'invalid signature') {
-                errorMessage = 'Token signature invalid - please login again';
-                errorCode = 'INVALID_SIGNATURE';
-                console.log('Token signature mismatch - likely due to JWT_SECRET change');
-            } else if (error.message === 'jwt malformed') {
-                errorMessage = 'Malformed token - please login again';
-                errorCode = 'MALFORMED_TOKEN';
-            }
-        } else if (error.name === 'TokenExpiredError') {
-            errorMessage = 'Token expired - please login again';
-            errorCode = 'TOKEN_EXPIRED';
-        } else if (error.name === 'NotBeforeError') {
-            errorMessage = 'Token not active yet';
-            errorCode = 'TOKEN_NOT_ACTIVE';
-        }
-        
-        if (!['INVALID_SIGNATURE', 'TOKEN_EXPIRED', 'MALFORMED_TOKEN'].includes(errorCode)) {
-            console.error('Auth middleware error:', error.name + ':', error.message);
-        }
-        
-        res.status(401).json({ 
-            error: errorMessage,
-            code: errorCode
-        });
+        console.error('Auth middleware error:', error);
+        res.status(401).json({ error: 'Invalid token.' });
     }
 };
 

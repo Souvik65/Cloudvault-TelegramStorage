@@ -10,8 +10,10 @@ const sendCode = async (req, res) => {
     try {
         const { phoneNumber } = req.body;
 
-        if (!phoneNumber) {
-            return res.status(400).json({ error: 'Phone number is required' });
+        if (!phoneNumber || !phoneNumber.startsWith('+')) {
+            return res.status(400).json({ 
+                error: 'Please provide a valid phone number with country code' 
+            });
         }
 
         console.log('Attempting to send code to:', phoneNumber);
@@ -51,7 +53,7 @@ const sendCode = async (req, res) => {
 
         console.log('Sending auth code request...');
 
-        // Use a different approach - start the auth process but catch the code request
+        // Use start method but catch the code request
         let codeSent = false;
         let phoneCodeHash = null;
 
@@ -70,13 +72,11 @@ const sendCode = async (req, res) => {
                     codeSent = true;
                     
                     // We don't have the code yet, so we'll throw an error to stop here
-                    // and handle the code input in the verify step
                     throw new Error('CODE_REQUESTED');
                 },
                 onError: (err) => {
                     console.log('Auth process error:', err.message);
                     if (err.message === 'CODE_REQUESTED') {
-                        // This is expected - code was sent successfully
                         return;
                     }
                     throw err;
@@ -86,7 +86,7 @@ const sendCode = async (req, res) => {
             if (error.message === 'CODE_REQUESTED' || codeSent) {
                 console.log('Code sending process completed successfully');
             } else {
-                throw error; // Re-throw unexpected errors
+                throw error;
             }
         }
 
@@ -101,16 +101,41 @@ const sendCode = async (req, res) => {
                 timestamp: Date.now()
             });
 
+            // Also store in database for consistency
+            const db = database.getDb();
+            const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+            
+            await new Promise((resolve, reject) => {
+                db.run(
+                    'DELETE FROM auth_sessions WHERE phone_number = ?',
+                    [phoneNumber],
+                    (err) => {
+                        if (err) reject(err);
+                        else resolve();
+                    }
+                );
+            });
+
+            await new Promise((resolve, reject) => {
+                db.run(
+                    'INSERT INTO auth_sessions (phone_number, phone_code_hash, expires_at) VALUES (?, ?, ?)',
+                    [phoneNumber, tempHash, expiresAt.toISOString()],
+                    function(err) {
+                        if (err) reject(err);
+                        else resolve(this.lastID);
+                    }
+                );
+            });
+
             console.log('Auth code sent successfully');
             console.log('Phone code hash:', tempHash);
-            console.log('Code type: auth.SentCodeTypeApp');
             console.log('=== END SEND CODE (SUCCESS) ===');
 
             res.json({
                 success: true,
                 message: 'Verification code sent successfully. Please check your Telegram app.',
                 phoneCodeHash: tempHash,
-                codeType: 'auth.SentCodeTypeApp'
+                type: 'app'
             });
         } else {
             throw new Error('Failed to initiate code sending process');
@@ -163,146 +188,111 @@ const verifyCode = async (req, res) => {
         console.log('Code:', code);
         console.log('Phone code hash:', phoneCodeHash);
 
+        // Check both memory and database
         const authData = pendingAuth.get(phoneNumber);
+        
         if (!authData) {
-            console.log('No pending auth session found');
-            return res.status(400).json({ 
-                error: 'Session expired. Please request a new verification code.' 
+            console.log('No pending auth session found in memory, checking database...');
+            
+            const db = database.getDb();
+            const dbSession = await new Promise((resolve, reject) => {
+                db.get(
+                    'SELECT * FROM auth_sessions WHERE phone_number = ? AND phone_code_hash = ?',
+                    [phoneNumber, phoneCodeHash],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
             });
+
+            if (!dbSession) {
+                return res.status(400).json({ 
+                    error: 'Session expired. Please request a new verification code.' 
+                });
+            }
+
+            // Check if session is expired
+            if (new Date() > new Date(dbSession.expires_at)) {
+                return res.status(400).json({ 
+                    error: 'Verification code expired. Please request a new one.' 
+                });
+            }
+
+            // Create new client for verification
+            const session = new StringSession('');
+            const client = new TelegramClient(
+                session,
+                parseInt(process.env.TELEGRAM_API_ID),
+                process.env.TELEGRAM_API_HASH,
+                { connectionRetries: 5, timeout: 30000 }
+            );
+
+            await client.connect();
+            
+            // Complete authentication
+            await client.start({
+                phoneNumber: async () => phoneNumber,
+                password: async () => {
+                    throw new Error('Two-factor authentication is enabled. Please disable it temporarily.');
+                },
+                phoneCode: async () => code,
+                onError: (err) => {
+                    console.error('Verification error:', err);
+                    throw err;
+                }
+            });
+
+            const me = await client.getMe();
+            const sessionString = client.session.save();
+
+            await client.disconnect();
+
+            return await createUserAndToken(res, me, phoneNumber, sessionString, db);
         }
 
+        // Use existing client from memory
         if (authData.phoneCodeHash !== phoneCodeHash) {
-            console.log('Phone code hash mismatch');
             return res.status(400).json({ 
                 error: 'Invalid session. Please request a new verification code.' 
             });
         }
 
         if (Date.now() - authData.timestamp > 10 * 60 * 1000) {
-            console.log('Session expired');
             return res.status(400).json({ 
                 error: 'Verification code expired. Please request a new one.' 
             });
         }
 
         console.log('Verifying code with existing client...');
-
-        // Get the existing client
         const { client } = authData;
 
-        // Create a fresh client for verification to avoid state issues
-        const verificationSession = new StringSession('');
-        const verificationClient = new TelegramClient(
-            verificationSession,
-            parseInt(process.env.TELEGRAM_API_ID),
-            process.env.TELEGRAM_API_HASH,
-            { 
-                connectionRetries: 5,
-                timeout: 30000 
-            }
-        );
-
-        await verificationClient.connect();
-
-        // Complete authentication with the provided code
-        console.log('Completing authentication with provided code...');
-        await verificationClient.start({
-            phoneNumber: async () => {
-                console.log('Providing phone number for verification...');
-                return phoneNumber;
-            },
+        // Complete authentication with provided code
+        await client.start({
+            phoneNumber: async () => phoneNumber,
             password: async () => {
-                console.log('2FA requested during verification');
                 throw new Error('Two-factor authentication is enabled. Please disable it temporarily.');
             },
-            phoneCode: async () => {
-                console.log('Providing verification code...');
-                return code;
-            },
+            phoneCode: async () => code,
             onError: (err) => {
-                console.error('Verification error:', err.message);
+                console.error('Verification error:', err);
                 throw err;
             }
         });
 
-        console.log('Authentication successful!');
+        const me = await client.getMe();
+        const sessionString = client.session.save();
 
-        // Get user info
-        const me = await verificationClient.getMe();
-        console.log('User ID:', me.id);
-        console.log('Username:', me.username);
+        // Clean up
+        await client.disconnect();
+        pendingAuth.delete(phoneNumber);
 
-        const sessionString = verificationClient.session.save();
+        const db = database.getDb();
+        await new Promise((resolve) => {
+            db.run('DELETE FROM auth_sessions WHERE phone_number = ?', [phoneNumber], () => resolve());
+        });
 
-        // Save user to database
-        try {
-            const userIdStr = me.id.toString();
-            
-            const existingUser = await database.query(
-                'SELECT * FROM users WHERE telegram_id = ?',
-                [userIdStr]
-            );
-
-            let userId;
-            if (existingUser.rows && existingUser.rows.length > 0) {
-                await database.query(
-                    'UPDATE users SET phone_number = ?, session_string = ? WHERE telegram_id = ?',
-                    [phoneNumber, sessionString, userIdStr]
-                );
-                userId = existingUser.rows[0].id;
-                console.log('Updated existing user:', userId);
-            } else {
-                const newUser = await database.query(
-                    'INSERT INTO users (telegram_id, phone_number, session_string, storage_preference, storage_config) VALUES (?, ?, ?, ?, ?)',
-                    [userIdStr, phoneNumber, sessionString, 'saved_messages', JSON.stringify({})]
-                );
-                userId = newUser.rows[0].id;
-                console.log('Created new user:', userId);
-            }
-
-            // Generate JWT
-            const token = jwt.sign(
-                { 
-                    userId, 
-                    telegramId: userIdStr, 
-                    phoneNumber 
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-            );
-
-            // Clean up both clients and pending auth
-            try {
-                await client.disconnect();
-                await verificationClient.disconnect();
-            } catch (e) {
-                console.log('Client disconnect error:', e.message);
-            }
-            
-            pendingAuth.delete(phoneNumber);
-
-            console.log('=== VERIFY CODE SUCCESS ===');
-
-            res.json({
-                success: true,
-                message: 'Authentication successful',
-                token,
-                user: {
-                    id: userId,
-                    telegramId: userIdStr,
-                    phoneNumber,
-                    username: me.username,
-                    firstName: me.firstName,
-                    lastName: me.lastName
-                }
-            });
-
-        } catch (dbError) {
-            console.error('Database error during user save:', dbError);
-            res.status(500).json({ 
-                error: 'Authentication successful but failed to save user data. Please try again.' 
-            });
-        }
+        return await createUserAndToken(res, me, phoneNumber, sessionString, db);
 
     } catch (error) {
         console.error('Verify code error:', error);
@@ -313,9 +303,8 @@ const verifyCode = async (req, res) => {
             errorMessage = 'Invalid verification code. Please check and try again.';
         } else if (error.message.includes('PHONE_CODE_EXPIRED')) {
             errorMessage = 'Verification code expired. Please request a new one.';
-        } else if (error.message.includes('SESSION_PASSWORD_NEEDED') || 
-                   error.message.includes('Two-factor authentication')) {
-            errorMessage = 'Two-factor authentication is enabled. Please disable it temporarily.';
+        } else if (error.message.includes('Two-factor authentication')) {
+            errorMessage = error.message;
         }
 
         res.status(400).json({
@@ -325,9 +314,71 @@ const verifyCode = async (req, res) => {
     }
 };
 
+const createUserAndToken = async (res, user, phoneNumber, sessionString, db) => {
+    try {
+        const userIdStr = user.id.toString();
+        
+        // Check if user exists
+        const existingUser = await database.query(
+            'SELECT * FROM users WHERE telegram_id = ?',
+            [userIdStr]
+        );
+
+        let userId;
+        if (existingUser.rows && existingUser.rows.length > 0) {
+            await database.query(
+                'UPDATE users SET phone_number = ?, session_string = ? WHERE telegram_id = ?',
+                [phoneNumber, sessionString, userIdStr]
+            );
+            userId = existingUser.rows[0].id;
+            console.log('Updated existing user:', userId);
+        } else {
+            const newUser = await database.query(
+                'INSERT INTO users (telegram_id, phone_number, session_string, storage_preference, storage_config) VALUES (?, ?, ?, ?, ?)',
+                [userIdStr, phoneNumber, sessionString, 'saved_messages', JSON.stringify({})]
+            );
+            userId = newUser.rows[0].id;
+            console.log('Created new user:', userId);
+        }
+
+        // Generate JWT
+        const token = jwt.sign(
+            { 
+                userId, 
+                telegramId: userIdStr, 
+                phoneNumber 
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
+
+        console.log('=== VERIFY CODE SUCCESS ===');
+
+        res.json({
+            success: true,
+            message: 'Authentication successful',
+            token,
+            user: {
+                id: userId,
+                telegramId: userIdStr,
+                phoneNumber,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }
+        });
+
+    } catch (error) {
+        console.error('Database error during user save:', error);
+        res.status(500).json({ 
+            error: 'Authentication successful but failed to save user data. Please try again.' 
+        });
+    }
+};
+
 const getMe = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         const user = await database.query(
             'SELECT * FROM users WHERE id = ?',
@@ -363,7 +414,7 @@ const getMe = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        const phoneNumber = req.user.phoneNumber;
+        const phoneNumber = req.user.phone_number;
 
         // Clean up any pending auth
         if (pendingAuth.has(phoneNumber)) {
