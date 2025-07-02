@@ -16,6 +16,7 @@ let fileSystem = {
 let selectedItems = new Set();
 let currentRenameId = null;
 let pendingPhoneNumber = null;
+let currentPhoneCodeHash = null; // ✅ Fixed: Added missing variable
 let isSearchMode = false;
 let storageOptions = null;
 let currentStorageConfig = null;
@@ -272,30 +273,64 @@ function getStorageMethodIcon(method) {
 }
 
 // ============================================================================
-// AUTHENTICATION FUNCTIONS (Same as before)
+// AUTHENTICATION FUNCTIONS - FIXED
 // ============================================================================
 async function sendOTP() {
     try {
-        const phoneNumber = document.getElementById('phoneNumber').value;
+        // ✅ Fixed: Use correct input ID
+        const phoneNumber = document.getElementById('loginPhone').value.trim();
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        
+        if (!phoneNumber) {
+            showError('Please enter your phone number');
+            return;
+        }
+
+        if (!phoneNumber.startsWith('+')) {
+            showError('Please enter phone number with country code (e.g., +1234567890)');
+            return;
+        }
+
+        // Show loading state
+        sendOtpBtn.innerHTML = '<div class="loading"></div> Sending...';
+        sendOtpBtn.disabled = true;
+
+        console.log('Sending OTP to:', phoneNumber);
         
         const response = await apiCall('/auth/send-code', {
             method: 'POST',
             body: { phoneNumber }
         });
 
+        console.log('Send OTP response:', response);
+
         if (response.success) {
-            // Store the phone code hash
+            // ✅ Fixed: Store phone number and hash properly
+            pendingPhoneNumber = phoneNumber;
             currentPhoneCodeHash = response.phoneCodeHash;
             
-            // Show OTP input section
-            document.getElementById('phoneSection').style.display = 'none';
-            document.getElementById('otpSection').style.display = 'block';
+            console.log('Stored phone number:', pendingPhoneNumber);
+            console.log('Stored phone code hash:', currentPhoneCodeHash);
             
-            showNotification('OTP sent successfully! Please check your Telegram app.', 'success');
+            // ✅ Fixed: Use correct section IDs
+            document.getElementById('phoneStep').classList.remove('active');
+            document.getElementById('otpStep').classList.add('active');
+            
+            // Focus on OTP input
+            document.getElementById('otpCode').focus();
+            
+            showSuccess('OTP sent successfully! Please check your Telegram app.');
+        } else {
+            throw new Error(response.message || 'Failed to send OTP');
         }
     } catch (error) {
         console.error('Send OTP error:', error);
-        showNotification(error.message || 'Failed to send OTP', 'error');
+        showError(error.message || 'Failed to send OTP');
+    } finally {
+        // Reset button state
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        sendOtpBtn.innerHTML = '📱 Send OTP';
+        sendOtpBtn.disabled = false;
     }
 }
 
@@ -308,7 +343,7 @@ async function verifyOTP() {
         return;
     }
 
-    if (!pendingPhoneNumber) {
+    if (!pendingPhoneNumber || !currentPhoneCodeHash) {
         showError('Session expired. Please request a new OTP.');
         goBackToPhone();
         return;
@@ -318,13 +353,22 @@ async function verifyOTP() {
         verifyOtpBtn.innerHTML = '<div class="loading"></div> Verifying...';
         verifyOtpBtn.disabled = true;
 
+        console.log('Verifying OTP with:', {
+            phoneNumber: pendingPhoneNumber,
+            code: otpCode,
+            phoneCodeHash: currentPhoneCodeHash
+        });
+
         const result = await apiCall('/auth/verify-code', {
             method: 'POST',
             body: {
                 phoneNumber: pendingPhoneNumber,
-                code: otpCode
+                code: otpCode,
+                phoneCodeHash: currentPhoneCodeHash
             }
         });
+
+        console.log('Verify OTP response:', result);
 
         if (result.success) {
             saveAuthData(result.token, result.user);
@@ -338,6 +382,7 @@ async function verifyOTP() {
             throw new Error('Login failed');
         }
     } catch (error) {
+        console.error('Verify OTP error:', error);
         showError(error.message);
     } finally {
         verifyOtpBtn.innerHTML = '✅ Verify & Login';
@@ -394,6 +439,7 @@ function goBackToPhone() {
     document.getElementById('otpCode').value = '';
     document.getElementById('twoFaPassword').value = '';
     pendingPhoneNumber = null;
+    currentPhoneCodeHash = null; // ✅ Fixed: Clear hash too
 }
 
 function goBackToOTP() {
@@ -407,8 +453,8 @@ async function showMainApp() {
     document.getElementById('appContainer').style.display = 'block';
 
     // Update user info
-    const userDisplay = `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() +
-        ` (${currentUser.phone})`;
+    const userDisplay = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 
+                       currentUser.phoneNumber || 'User';
     document.getElementById('userPhone').textContent = userDisplay;
 
     // Load storage options and update UI
@@ -447,6 +493,7 @@ async function logout() {
         fileSystem = { files: [], folders: [], currentPath: '' };
         selectedItems.clear();
         pendingPhoneNumber = null;
+        currentPhoneCodeHash = null; // ✅ Fixed: Clear hash
         isSearchMode = false;
         storageOptions = null;
         currentStorageConfig = null;
@@ -754,7 +801,7 @@ function renderFiles() {
         } else {
             uploadZone.style.display = 'none';
         }
-        fileGrid.innerHTML = `<div class="empty-state"><h3>${isSearchMode ? '🔍 No search results' : '📂 No files here yet'}</h3><p>${isSearchMode ? 'Try a different search term' : 'Upload some files to get started!'}</p></div>`;
+        fileGrid.innerHTML = `<div class="empty-state"><h3>${isSearchMode ? '🔍 No search results' : '📂 No files here yet'}</h3><p>${isSearchMode ? 'Try a different search term' : 'Upload some files to get started'}</p></div>`;
     } else {
         uploadZone.style.display = 'none';
         let html = '';
@@ -763,13 +810,15 @@ function renderFiles() {
         currentFolders.forEach(folder => {
             const isSelected = selectedItems.has(`folder-${folder.id}`);
             html += `
-                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('folder-${folder.id}')" ondblclick="navigateToFolder('${folder.folderPath ? folder.folderPath + '/' : ''}${folder.folderName}')">
+                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('folder-${folder.id}')" ondblclick="navigateToFolder('${folder.folderPath ? folder.folderPath + '/' + folder.folderName : folder.folderName}')">
                             <span class="file-icon">📁</span>
                             <div class="file-name">${folder.folderName}</div>
                             <div class="file-size">Folder</div>
                             ${folder.folderPath ? `<div class="file-location">📍 ${folder.folderPath}</div>` : ''}
                             <div class="file-actions">
-                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFolder(${folder.id})">🗑️ Delete</button>
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFolder(${folder.id})" title="Delete Folder">
+                                    🗑️ Delete
+                                </button>
                             </div>
                         </div>
                     `;
@@ -794,9 +843,9 @@ function renderFiles() {
                             <div class="file-size">${size}</div>
                             ${file.folderPath ? `<div class="file-location">📍 ${file.folderPath}</div>` : ''}
                             <div class="file-actions">
-                                ${isPreviewable ? `<button class="action-btn btn-success" onclick="event.stopPropagation(); previewFile(${file.id})">👁️ Preview </button>` : ''}
-                                <button class="action-btn btn-primary" onclick="event.stopPropagation(); downloadFile(${file.id})">⬇️ Download</button>
-                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})">🗑️ Delete</button>
+                                ${isPreviewable ? `<button class="action-btn btn-success" onclick="event.stopPropagation(); previewFile(${file.id})" title="Preview File">👁️ Preview</button>` : ''}
+                                <button class="action-btn btn-primary" onclick="event.stopPropagation(); downloadFile(${file.id})" title="Download File">⬇️ Download</button>
+                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})" title="Delete File">🗑️ Delete</button>
                             </div>
                         </div>
                     `;
@@ -996,76 +1045,6 @@ async function deleteSelected() {
     }
 }
 
-// Update the renderFiles function to properly show delete button for folders
-function renderFiles() {
-    const fileGrid = document.getElementById('fileGrid');
-    const uploadZone = document.getElementById('uploadZone');
-
-    const currentFiles = fileSystem.files;
-    const currentFolders = fileSystem.folders;
-
-    if (currentFiles.length === 0 && currentFolders.length === 0) {
-        if (!isSearchMode) {
-            uploadZone.style.display = 'block';
-        } else {
-            uploadZone.style.display = 'none';
-        }
-        fileGrid.innerHTML = `<div class="empty-state"><h3>${isSearchMode ? '🔍 No search results' : '📂 No files here yet'}</h3><p>${isSearchMode ? 'Try a different search term' : 'Upload some files to get started!'}</p></div>`;
-    } else {
-        uploadZone.style.display = 'none';
-        let html = '';
-
-        // Render folders first
-        currentFolders.forEach(folder => {
-            const isSelected = selectedItems.has(`folder-${folder.id}`);
-            html += `
-                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('folder-${folder.id}')" ondblclick="navigateToFolder('${folder.folderPath ? folder.folderPath + '/' : ''}${folder.folderName}')">
-                            <span class="file-icon">📁</span>
-                            <div class="file-name">${folder.folderName}</div>
-                            <div class="file-size">Folder</div>
-                            ${folder.folderPath ? `<div class="file-location">📍 ${folder.folderPath}</div>` : ''}
-                            <div class="file-actions">
-                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFolder(${folder.id})" title="Delete Folder">
-                                    🗑️ Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-        });
-
-        // Render files
-        currentFiles.forEach(file => {
-            const icon = getFileIcon(file.fileType);
-            const size = formatFileSize(file.fileSize);
-            const isPreviewable = canPreview(file.fileType);
-            const isSelected = selectedItems.has(`file-${file.id}`);
-            const storageIcon = getStorageMethodIcon(file.storageMethod);
-            const storageName = getStorageMethodName(file.storageMethod);
-
-            html += `
-                        <div class="file-item ${isSelected ? 'selected' : ''}" onclick="selectItem('file-${file.id}')">
-                            <div class="storage-badge ${file.storageMethod}" title="Stored in: ${storageName}">
-                                ${storageIcon}
-                            </div>
-                            <span class="file-icon">${icon}</span>
-                            <div class="file-name">${file.fileName}</div>
-                            <div class="file-size">${size}</div>
-                            ${file.folderPath ? `<div class="file-location">📍 ${file.folderPath}</div>` : ''}
-                            <div class="file-actions">
-                                ${isPreviewable ? `<button class="action-btn btn-success" onclick="event.stopPropagation(); previewFile(${file.id})" title="Preview File">👁️ Preview</button>` : ''}
-                                <button class="action-btn btn-primary" onclick="event.stopPropagation(); downloadFile(${file.id})" title="Download File">⬇️ Download</button>
-                                <button class="action-btn btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})" title="Delete File">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    `;
-        });
-
-        fileGrid.innerHTML = html;
-    }
-}
-
-
-// Update the uploadFiles function to remove manual storage selection
 // Enhanced upload function with real-time progress tracking
 async function uploadFiles() {
     const fileInput = document.getElementById('fileInput');
@@ -1160,28 +1139,6 @@ async function uploadFiles() {
                     false,
                     `File ${i + 1} of ${totalFiles} • ETA: ${etaText}`
                 );
-                
-                // Update detailed status in enhanced overlay
-                // uploadStatusEnhanced.innerHTML = `
-                //     <div class="real-time-status">
-                //         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                //             <div style="font-weight: 600; color: #fff;">${file.name}</div>
-                //             <div style="font-weight: 600; color: #10b981;">${percentText}%</div>
-                //         </div>
-                //         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9;">
-                //             <span>${formatFileSize(progressEvent.loaded)} / ${formatFileSize(file.size)}</span>
-                //             <span>${speedText}</span>
-                //         </div>
-                //         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.7; margin-top: 4px;">
-                //             <span>File ${i + 1} of ${totalFiles}</span>
-                //             <span>ETA: ${etaText}</span>
-                //         </div>
-                //         <div class="upload-speed" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
-                //             <span>Overall: ${Math.round(totalProgress)}%</span>
-                //             <span>${formatFileSize(uploadedSize + progressEvent.loaded)} / ${formatFileSize(totalSize)}</span>
-                //         </div>
-                //     </div>
-                // `;
             });
 
             if (result.success) {
@@ -1502,6 +1459,7 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadButton.setAttribute('data-original-text', uploadButton.innerHTML);
     }
 });
+
 // ============================================================================
 // FILE OPERATIONS
 // ============================================================================
@@ -1614,30 +1572,6 @@ async function deleteFile(id) {
     }
 }
 
-async function deleteSelected() {
-    if (selectedItems.size === 0) return;
-
-    if (confirm(`Are you sure you want to delete ${selectedItems.size} selected item(s)?`)) {
-        try {
-            for (const itemId of selectedItems) {
-                const [type, id] = itemId.split('-');
-                const numId = parseInt(id);
-
-                if (type === 'file') {
-                    await apiCall(`/files/${numId}`, { method: 'DELETE' });
-                }
-            }
-
-            selectedItems.clear();
-            document.getElementById('deleteBtn').style.display = 'none';
-            loadFiles();
-            showSuccess('Selected items deleted successfully');
-        } catch (error) {
-            showError('Failed to delete items: ' + error.message);
-        }
-    }
-}
-
 // ============================================================================
 // FOLDER OPERATIONS
 // ============================================================================
@@ -1707,57 +1641,70 @@ async function loadMigrationFiles() {
                 const storageName = getStorageMethodName(file.storageMethod);
 
                 html += `
-                            <div class="migration-file">
-                                <input type="checkbox" class="migration-file-checkbox" data-file-id="${file.id}" data-storage-method="${file.storageMethod}">
-                                <span>${getFileIcon(file.fileType)}</span>
-                                <div style="flex: 1;">
-                                    <div><strong>${file.fileName}</strong></div>
-                                    <div style="font-size: 12px; color: #666;">
-                                        ${formatFileSize(file.fileSize)} • ${storageIcon} ${storageName}
-                                        ${file.folderPath ? ` • 📍 ${file.folderPath}` : ''}
-                                    </div>
-                                </div>
+                    <div class="migration-file">
+                        <input type="checkbox" class="migration-file-checkbox" data-file-id="${file.id}" data-storage-method="${file.storageMethod}">
+                        <span>${getFileIcon(file.fileType)}</span>
+                        <div class="migration-file-info">
+                            <div class="migration-file-name">${file.fileName}</div>
+                            <div class="migration-file-details">
+                                <span class="file-size">${formatFileSize(file.fileSize)}</span>
+                                <span class="storage-method">${storageIcon} ${storageName}</span>
                             </div>
-                        `;
+                        </div>
+                    </div>
+                `;
             });
 
-            container.innerHTML = html || '<div style="text-align: center; color: #666;">No files found</div>';
+            container.innerHTML = html || '<div class="empty-state">No files found</div>';
+
+            // Add event listeners
+            document.querySelectorAll('.migration-file-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const fileId = this.dataset.fileId;
+                    if (this.checked) {
+                        migrationSelectedFiles.add(fileId);
+                    } else {
+                        migrationSelectedFiles.delete(fileId);
+                    }
+                    updateMigrationButtonState();
+                });
+            });
         }
     } catch (error) {
         console.error('Failed to load migration files:', error);
-        showError('Failed to load files for migration');
+        showError('Failed to load migration files: ' + error.message);
     }
 }
 
 function displayMigrationStorageOptions() {
-    const container = document.getElementById('migrationStorageOptions');
     if (!storageOptions) return;
 
+    const container = document.getElementById('migrationStorageOptions');
     let html = '';
 
     // Saved Messages
     html += `
-                <div class="storage-option" data-method="saved_messages" data-chat-id="me">
-                    <input type="radio" name="migrationStorageMethod" value="saved_messages">
-                    <div class="storage-option-info">
-                        <div class="storage-option-title">💾 Saved Messages</div>
-                        <div class="storage-option-desc">Move files to Saved Messages</div>
-                    </div>
-                </div>
-            `;
+        <div class="storage-option" data-method="saved_messages" data-chat-id="me">
+            <input type="radio" name="migrationStorageMethod" value="saved_messages" checked>
+            <div class="storage-option-info">
+                <div class="storage-option-title">💾 Saved Messages</div>
+                <div class="storage-option-desc">Migrate to your Telegram Saved Messages</div>
+            </div>
+        </div>
+    `;
 
     // Channels
     storageOptions.channels.forEach(channel => {
         if (channel.canPost) {
             html += `
-                        <div class="storage-option" data-method="private_channel" data-chat-id="${channel.id}">
-                            <input type="radio" name="migrationStorageMethod" value="private_channel">
-                            <div class="storage-option-info">
-                                <div class="storage-option-title">📢 ${channel.name}</div>
-                                <div class="storage-option-desc">${channel.description}</div>
-                            </div>
-                        </div>
-                    `;
+                <div class="storage-option" data-method="private_channel" data-chat-id="${channel.id}">
+                    <input type="radio" name="migrationStorageMethod" value="private_channel">
+                    <div class="storage-option-info">
+                        <div class="storage-option-title">📢 ${channel.name}</div>
+                        <div class="storage-option-desc">${channel.description}</div>
+                    </div>
+                </div>
+            `;
         }
     });
 
@@ -1765,35 +1712,35 @@ function displayMigrationStorageOptions() {
     storageOptions.groups.forEach(group => {
         if (group.canPost) {
             html += `
-                        <div class="storage-option" data-method="private_group" data-chat-id="${group.id}">
-                            <input type="radio" name="migrationStorageMethod" value="private_group">
-                            <div class="storage-option-info">
-                                <div class="storage-option-title">👥 ${group.name}</div>
-                                <div class="storage-option-desc">${group.description}</div>
-                            </div>
-                        </div>
-                    `;
+                <div class="storage-option" data-method="private_group" data-chat-id="${group.id}">
+                    <input type="radio" name="migrationStorageMethod" value="private_group">
+                    <div class="storage-option-info">
+                        <div class="storage-option-title">👥 ${group.name}</div>
+                        <div class="storage-option-desc">${group.description}</div>
+                    </div>
+                </div>
+            `;
         }
     });
 
     // Bots
     storageOptions.bots.forEach(bot => {
         html += `
-                    <div class="storage-option" data-method="bot_storage" data-bot-username="${bot.username}">
-                        <input type="radio" name="migrationStorageMethod" value="bot_storage">
-                        <div class="storage-option-info">
-                            <div class="storage-option-title">🤖 ${bot.name}</div>
-                            <div class="storage-option-desc">${bot.description}</div>
-                        </div>
-                    </div>
-                `;
+            <div class="storage-option" data-method="bot_storage" data-bot-username="${bot.username}">
+                <input type="radio" name="migrationStorageMethod" value="bot_storage">
+                <div class="storage-option-info">
+                    <div class="storage-option-title">🤖 ${bot.name}</div>
+                    <div class="storage-option-desc">${bot.description}</div>
+                </div>
+            </div>
+        `;
     });
 
     container.innerHTML = html;
 
     // Add click handlers
     document.querySelectorAll('#migrationStorageOptions .storage-option').forEach(option => {
-        option.addEventListener('click', function () {
+        option.addEventListener('click', function() {
             document.querySelectorAll('#migrationStorageOptions .storage-option').forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             this.querySelector('input[type="radio"]').checked = true;
@@ -1801,213 +1748,86 @@ function displayMigrationStorageOptions() {
     });
 }
 
-function toggleAllFiles() {
-    const selectAll = document.getElementById('selectAllFiles');
-    const checkboxes = document.querySelectorAll('.migration-file-checkbox');
-
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
+function updateMigrationButtonState() {
+    const migrateBtn = document.getElementById('startMigrationBtn');
+    const count = migrationSelectedFiles.size;
+    
+    if (count > 0) {
+        migrateBtn.disabled = false;
+        migrateBtn.textContent = `🚀 Migrate ${count} Files`;
+    } else {
+        migrateBtn.disabled = true;
+        migrateBtn.textContent = '🚀 Select Files to Migrate';
+    }
 }
 
-function selectByStorageMethod() {
-    const selectByStorage = document.getElementById('selectByStorage');
-    if (!selectByStorage.checked) return;
-
-    const storageMethod = prompt('Enter storage method to select (saved_messages, private_channel, private_group, bot_storage):');
-    if (!storageMethod) return;
-
+function selectAllMigrationFiles() {
     const checkboxes = document.querySelectorAll('.migration-file-checkbox');
+    const selectAllBtn = document.getElementById('selectAllMigrationBtn');
+    
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
     checkboxes.forEach(checkbox => {
-        if (checkbox.dataset.storageMethod === storageMethod) {
-            checkbox.checked = true;
+        checkbox.checked = !allChecked;
+        const fileId = checkbox.dataset.fileId;
+        
+        if (!allChecked) {
+            migrationSelectedFiles.add(fileId);
+        } else {
+            migrationSelectedFiles.delete(fileId);
         }
     });
+    
+    selectAllBtn.textContent = allChecked ? '☑️ Select All' : '☐ Deselect All';
+    updateMigrationButtonState();
 }
 
 async function startMigration() {
-    const selectedFiles = Array.from(document.querySelectorAll('.migration-file-checkbox:checked'))
-        .map(checkbox => parseInt(checkbox.dataset.fileId));
-
-    if (selectedFiles.length === 0) {
+    if (migrationSelectedFiles.size === 0) {
         showError('Please select files to migrate');
         return;
     }
 
-    const selectedStorageOption = document.querySelector('input[name="migrationStorageMethod"]:checked');
-    if (!selectedStorageOption) {
-        showError('Please select a destination storage method');
+    const selectedOption = document.querySelector('input[name="migrationStorageMethod"]:checked');
+    if (!selectedOption) {
+        showError('Please select a target storage method');
         return;
     }
 
-    const storageElement = selectedStorageOption.closest('.storage-option');
-    const newStorageConfig = {
-        method: selectedStorageOption.value,
-        chatId: storageElement.dataset.chatId,
-        botUsername: storageElement.dataset.botUsername
-    };
+    const method = selectedOption.value;
+    const optionElement = selectedOption.closest('.storage-option');
+    const chatId = optionElement.dataset.chatId;
+    const botUsername = optionElement.dataset.botUsername;
 
-    const progress = document.getElementById('migrationProgress');
-    const progressFill = document.getElementById('migrationProgressFill');
-    const status = document.getElementById('migrationStatus');
-    const startBtn = document.getElementById('startMigrationBtn');
+    if (!confirm(`Are you sure you want to migrate ${migrationSelectedFiles.size} files to ${getStorageMethodName(method)}?`)) {
+        return;
+    }
 
     try {
-        progress.style.display = 'block';
-        startBtn.disabled = true;
-        startBtn.textContent = 'Migrating...';
+        showLoadingOverlay('Migrating Files...', 'This may take a while for large files');
 
-        status.textContent = `Starting migration of ${selectedFiles.length} files...`;
-        progressFill.style.width = '0%';
-
-        const result = await apiCall('/storage/migrate', {
+        const result = await apiCall('/files/migrate', {
             method: 'POST',
             body: {
-                fileIds: selectedFiles,
-                newStorageConfig: newStorageConfig
+                fileIds: Array.from(migrationSelectedFiles),
+                targetMethod: method,
+                chatId: chatId,
+                botUsername: botUsername
             }
         });
 
         if (result.success) {
-            progressFill.style.width = '100%';
-            status.innerHTML = `
-                        ✅ Migration completed!<br>
-                        Successfully migrated: ${result.migratedFiles.length} files<br>
-                        ${result.errors.length > 0 ? `Errors: ${result.errors.length} files` : ''}
-                    `;
-
-            if (result.errors.length > 0) {
-                console.error('Migration errors:', result.errors);
-            }
-
-            setTimeout(() => {
-                closeModal('migrationModal');
-                loadFiles(); // Refresh file list
-            }, 3000);
+            hideLoadingOverlay();
+            showSuccess(`Successfully migrated ${migrationSelectedFiles.size} files!`);
+            closeModal('migrationModal');
+            migrationSelectedFiles.clear();
+            loadFiles(); // Refresh file list
         } else {
             throw new Error('Migration failed');
         }
     } catch (error) {
-        status.textContent = `❌ Migration failed: ${error.message}`;
+        hideLoadingOverlay();
         showError('Migration failed: ' + error.message);
-    } finally {
-        startBtn.disabled = false;
-        startBtn.textContent = 'Start Migration';
-    }
-}
-
-// ============================================================================
-// STATISTICS FUNCTIONS
-// ============================================================================
-async function openStatsModal() {
-    document.getElementById('statsModal').style.display = 'block';
-    await loadStats();
-}
-
-async function loadStats() {
-    try {
-        const result = await apiCall('/files/stats');
-        if (result.success) {
-            displayStats(result.stats);
-        }
-    } catch (error) {
-        console.error('Failed to load stats:', error);
-        showError('Failed to load statistics');
-    }
-}
-
-function displayStats(stats) {
-    const container = document.getElementById('storageStats');
-    const detailedContainer = document.getElementById('detailedStats');
-
-    // Main stats
-    let html = `
-                <div class="stat-card">
-                    <div class="stat-number">${stats.totalFiles}</div>
-                    <div class="stat-label">Total Files</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${formatFileSize(stats.totalStorage)}</div>
-                    <div class="stat-label">Total Storage</div>
-                </div>
-            `;
-
-    // Storage method breakdown
-    if (stats.storageBreakdown && stats.storageBreakdown.length > 0) {
-        stats.storageBreakdown.forEach(item => {
-            const icon = getStorageMethodIcon(item.storage_method);
-            const name = getStorageMethodName(item.storage_method);
-            html += `
-                        <div class="stat-card">
-                            <div class="stat-number">${item.count}</div>
-                            <div class="stat-label">${icon} ${name}</div>
-                        </div>
-                    `;
-        });
-    }
-
-    container.innerHTML = html;
-
-    // Detailed breakdown
-    let detailedHtml = '<h3>File Type Breakdown</h3>';
-    if (stats.typeBreakdown && stats.typeBreakdown.length > 0) {
-        detailedHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px;">';
-        stats.typeBreakdown.forEach(type => {
-            detailedHtml += `
-                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                            <div style="font-weight: bold;">${getFileIcon(type.file_type)} ${type.file_type || 'Unknown'}</div>
-                            <div style="color: #666; font-size: 14px;">${type.count} files</div>
-                            <div style="color: #666; font-size: 14px;">${formatFileSize(type.size)}</div>
-                        </div>
-                    `;
-        });
-        detailedHtml += '</div>';
-    }
-
-    detailedContainer.innerHTML = detailedHtml;
-}
-
-async function refreshStats() {
-    await loadStats();
-    showSuccess('Statistics refreshed!');
-}
-
-// ============================================================================
-// DRAG AND DROP FUNCTIONALITY
-// ============================================================================
-function dragOverHandler(ev) {
-    ev.preventDefault();
-    document.getElementById('uploadZone').classList.add('dragover');
-}
-
-function dragLeaveHandler(ev) {
-    document.getElementById('uploadZone').classList.remove('dragover');
-}
-
-async function dropHandler(ev) {
-    ev.preventDefault();
-    document.getElementById('uploadZone').classList.remove('dragover');
-
-    const files = ev.dataTransfer.files;
-    if (files.length === 0) return;
-
-    try {
-        for (let file of files) {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('folderPath', fileSystem.currentPath);
-            formData.append('useCustomStorage', 'false');
-
-            await apiCall('/files/upload', {
-                method: 'POST',
-                body: formData
-            });
-        }
-
-        showSuccess(`Successfully uploaded ${files.length} file(s)!`);
-        loadFiles();
-    } catch (error) {
-        showError('Failed to upload files: ' + error.message);
     }
 }
 
@@ -2015,98 +1835,272 @@ async function dropHandler(ev) {
 // MODAL FUNCTIONS
 // ============================================================================
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
 
+    // Clear form data when closing modals
     if (modalId === 'uploadModal') {
-        const progressBar = document.getElementById('progressBar');
-        const progressFill = document.getElementById('progressFill');
-        const uploadStatus = document.getElementById('uploadStatus');
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileDescription').value = '';
+        document.getElementById('useCustomStorage').checked = false;
+        document.getElementById('uploadStorageOptions').style.display = 'none';
+        document.getElementById('progressBar').style.display = 'none';
+    }
 
-        if (progressBar) progressBar.style.display = 'none';
-        if (progressFill) progressFill.style.width = '0%';
-        if (uploadStatus) uploadStatus.innerHTML = '';
+    if (modalId === 'folderModal') {
+        document.getElementById('folderName').value = '';
+    }
+
+    if (modalId === 'createChannelModal') {
+        document.getElementById('channelName').value = '';
+        document.getElementById('channelCategory').value = 'general';
     }
 
     if (modalId === 'migrationModal') {
-        const progress = document.getElementById('migrationProgress');
-        if (progress) progress.style.display = 'none';
         migrationSelectedFiles.clear();
+        updateMigrationButtonState();
     }
 }
 
 // ============================================================================
-// EVENT LISTENERS AND INITIALIZATION
+// NOTIFICATION FUNCTIONS
 // ============================================================================
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+    notification.innerHTML = `
+        <span class="notification-icon">${icon}</span>
+        <span class="notification-message">${message}</span>
+    `;
 
-// Close modals when clicking outside
-window.onclick = function (event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
+    document.body.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
 }
 
-// Add enter key listeners for forms
-document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('loginPhone').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') sendOTP();
+// ============================================================================
+// KEYBOARD SHORTCUTS
+// ============================================================================
+document.addEventListener('keydown', function(event) {
+    // Escape key to close modals
+    if (event.key === 'Escape') {
+        const modals = ['uploadModal', 'previewModal', 'folderModal', 'storageSettingsModal', 'createChannelModal', 'migrationModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal && modal.style.display === 'block') {
+                closeModal(modalId);
+            }
+        });
+    }
+
+    // Ctrl+U for upload
+    if (event.ctrlKey && event.key === 'u') {
+        event.preventDefault();
+        if (authToken) {
+            showUploadModal();
+        }
+    }
+
+    // Ctrl+F for search
+    if (event.ctrlKey && event.key === 'f') {
+        event.preventDefault();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.focus();
+        }
+    }
+
+    // Delete key for selected items
+    if (event.key === 'Delete' && selectedItems.size > 0) {
+        deleteSelected();
+    }
+});
+
+// ============================================================================
+// DRAG AND DROP UPLOAD
+// ============================================================================
+function setupDragAndDrop() {
+    const uploadZone = document.getElementById('uploadZone');
+    const fileGrid = document.getElementById('fileGrid');
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.addEventListener(eventName, preventDefaults, false);
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+        fileGrid.addEventListener(eventName, preventDefaults, false);
     });
 
-    document.getElementById('otpCode').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') verifyOTP();
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, highlight, false);
+        fileGrid.addEventListener(eventName, highlight, false);
     });
 
-    document.getElementById('twoFaPassword').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') verifyPassword();
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, unhighlight, false);
+        fileGrid.addEventListener(eventName, unhighlight, false);
     });
 
-    document.getElementById('folderName').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') confirmCreateFolder();
-    });
+    function highlight(e) {
+        if (e.currentTarget === uploadZone) {
+            uploadZone.classList.add('drag-over');
+        } else if (e.currentTarget === fileGrid) {
+            fileGrid.classList.add('drag-over');
+        }
+    }
 
-    document.getElementById('channelName').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') createChannel();
+    function unhighlight(e) {
+        uploadZone.classList.remove('drag-over');
+        fileGrid.classList.remove('drag-over');
+    }
+
+    // Handle dropped files
+    uploadZone.addEventListener('drop', handleDrop, false);
+    fileGrid.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.files = files;
+            showUploadModal();
+        }
+    }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+async function initializeApp() {
+    console.log('Initializing CloudVault app...');
+    
+    // Setup drag and drop
+    setupDragAndDrop();
+    
+    // Check if user is already logged in
+    if (loadAuthData()) {
+        try {
+            console.log('Found stored auth data, verifying...');
+            const result = await apiCall('/auth/me');
+            
+            if (result.success) {
+                console.log('Auth verified, showing main app');
+                currentUser = result.user;
+                showMainApp();
+            } else {
+                console.log('Auth verification failed, clearing data');
+                clearAuthData();
+                document.getElementById('loginContainer').style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Auth verification error:', error);
+            clearAuthData();
+            document.getElementById('loginContainer').style.display = 'flex';
+        }
+    } else {
+        console.log('No stored auth data, showing login');
+        document.getElementById('loginContainer').style.display = 'flex';
+    }
+
+    // Setup periodic connection check
+    setInterval(checkConnection, 30000); // Check every 30 seconds
+    
+    // Setup online/offline listeners
+    window.addEventListener('online', () => showConnectionStatus(true));
+    window.addEventListener('offline', () => showConnectionStatus(false));
+    
+    console.log('App initialization complete');
+}
+
+// ============================================================================
+// START THE APPLICATION
+// ============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, starting app...');
+    initializeApp();
+    
+    // Setup Enter key handlers for forms
+    document.getElementById('loginPhone').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendOTP();
+        }
+    });
+    
+    document.getElementById('otpCode').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            verifyOTP();
+        }
+    });
+    
+    document.getElementById('twoFaPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            verifyPassword();
+        }
+    });
+    
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchFiles();
+        }
+    });
+    
+    document.getElementById('folderName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            confirmCreateFolder();
+        }
+    });
+    
+    document.getElementById('channelName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            createChannel();
+        }
     });
 });
 
 // ============================================================================
-// APPLICATION INITIALIZATION
+// GLOBAL ERROR HANDLER
 // ============================================================================
-async function init() {
-    try {
-        // Check if user is already logged in
-        if (loadAuthData()) {
-            try {
-                // Verify token is still valid
-                const result = await apiCall('/auth/me');
-                if (result.success) {
-                    currentUser = result.user;
-                    showMainApp();
-                    return;
-                }
-            } catch (error) {
-                console.log('Stored token is invalid, showing login');
-                clearAuthData();
-            }
-        }
+window.addEventListener('error', function(event) {
+    console.error('Global error:', event.error);
+    showError('An unexpected error occurred. Please refresh the page if the problem persists.');
+});
 
-        // Show login screen
-        document.getElementById('loginContainer').style.display = 'flex';
-        document.getElementById('appContainer').style.display = 'none';
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    showError('An unexpected error occurred. Please refresh the page if the problem persists.');
+});
 
-        // Check server connection
-        await checkConnection();
-
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showError('Failed to initialize application');
-    }
+// Export for debugging (optional)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        sendOTP,
+        verifyOTP,
+        loadFiles,
+        uploadFiles,
+        apiCall
+    };
 }
-
-// Start the application
-init();
-
-// Check connection periodically
-setInterval(checkConnection, 30000); // Check every 30 seconds
