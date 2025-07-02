@@ -1,5 +1,6 @@
 const { TelegramClient } = require('telegram');
 const { StringSession } = require('telegram/sessions');
+const { computeCheck } = require('telegram/Password');
 const jwt = require('jsonwebtoken');
 const database = require('../config/database');
 
@@ -316,10 +317,17 @@ const verifyPassword = async (req, res) => {
             console.log('SRP ID:', passwordInfo.srpId?.toString());
             console.log('Has recovery:', !!passwordInfo.hasRecovery);
 
-            // Compute password hash using SRP
-            const inputCheckPassword = await client.computeCheck(passwordInfo, password);
+            // Validate password info before proceeding
+            if (!passwordInfo.hasPassword) {
+                throw new Error('Two-factor authentication is not enabled for this account.');
+            }
+
+            console.log('Computing password hash using SRP...');
             
-            console.log('Password hash computed, sending check password request...');
+            // Compute password hash using SRP
+            const inputCheckPassword = await computeCheck(passwordInfo, password);
+            
+            console.log('Password hash computed successfully, sending check password request...');
 
             // Check the password
             const result = await client.invoke(
@@ -413,8 +421,8 @@ const verifyPassword = async (req, res) => {
             } else if (passwordError.errorMessage === 'FLOOD_WAIT') {
                 const waitTime = passwordError.seconds || 60;
                 errorMessage = `Too many attempts. Please wait ${waitTime} seconds before trying again.`;
-            } else if (passwordError.message && passwordError.message.includes('computeCheck')) {
-                errorMessage = 'Failed to process password. Please ensure your 2FA password is correct.';
+            } else if (passwordError.message && (passwordError.message.includes('SRP') || passwordError.message.includes('password'))) {
+                errorMessage = 'Failed to process 2FA password. Please ensure your password is correct and try again.';
             }
 
             throw new Error(errorMessage);
