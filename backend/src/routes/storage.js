@@ -104,23 +104,69 @@ router.post('/create-channel', async (req, res) => {
 router.post('/settings', async (req, res) => {
     try {
         const user = req.user;
-        const { method, chatId, autoCreateChannels } = req.body;
+        const { method, chatId, autoCreateChannels, botUsername } = req.body;
+
+        // Validate storage method
+        const allowedMethods = ['saved_messages', 'private_channel', 'private_group', 'bot_storage'];
+        if (!method || !allowedMethods.includes(method)) {
+            return res.status(400).json({
+                error: 'Invalid storage method',
+                message: 'Method must be one of: ' + allowedMethods.join(', ')
+            });
+        }
+
+        // Validate chatId for non-saved_messages methods
+        if (method !== 'saved_messages') {
+            if (!chatId || (chatId !== 'me' && !/^-?\d+$/.test(chatId.toString()))) {
+                return res.status(400).json({
+                    error: 'Invalid chat ID',
+                    message: 'Chat ID is required for selected storage method'
+                });
+            }
+        }
+
+        // Validate botUsername for bot storage
+        if (method === 'bot_storage') {
+            if (!botUsername || typeof botUsername !== 'string' || botUsername.trim() === '') {
+                return res.status(400).json({
+                    error: 'Invalid bot username',
+                    message: 'Bot username is required for bot storage method'
+                });
+            }
+        }
 
         const storageConfig = {
-            method: method || 'saved_messages',
+            method: method,
             chatId: chatId,
-            autoCreateChannels: autoCreateChannels || false
+            autoCreateChannels: autoCreateChannels || false,
+            botUsername: botUsername
         };
 
         console.log('Saving storage settings for user:', user.id, storageConfig);
 
+        // Verify the storage method is accessible before saving
+        try {
+            if (method !== 'saved_messages') {
+                // Test access to the storage target
+                await enhancedTelegramService.getStorageOptions(user.session_string);
+                console.log('Storage method access verified');
+            }
+        } catch (accessError) {
+            console.error('Storage method access verification failed:', accessError);
+            return res.status(400).json({
+                error: 'Storage method not accessible',
+                message: 'Cannot access the selected storage method. Please check your settings and try again.'
+            });
+        }
+
         const db = database.getDb();
         await new Promise((resolve, reject) => {
             db.run(
-                'UPDATE users SET storage_preference = ?, storage_config = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                'UPDATE users SET storage_preference = ?, storage_config = ? WHERE id = ?',
                 [method, JSON.stringify(storageConfig), user.id],
                 (err) => {
                     if (err) {
+                        console.error('Database error saving storage settings:', err);
                         reject(err);
                     } else {
                         resolve();
@@ -131,12 +177,18 @@ router.post('/settings', async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Storage settings saved successfully'
+            message: 'Storage settings saved successfully',
+            settings: {
+                method: method,
+                chatId: chatId,
+                autoCreateChannels: autoCreateChannels || false
+            }
         });
     } catch (error) {
         console.error('Error saving storage settings:', error);
         res.status(500).json({
-            error: 'Failed to save storage settings: ' + error.message
+            error: 'Failed to save storage settings',
+            message: error.message || 'An unexpected error occurred while saving settings'
         });
     }
 });

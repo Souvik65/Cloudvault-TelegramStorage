@@ -1,5 +1,5 @@
 const express = require('express');
-const upload = require('../middleware/upload');
+const { upload, handleUploadError } = require('../middleware/upload');
 const authMiddleware = require('../middleware/auth');
 const enhancedFileController = require('../controllers/enhancedFileController');
 
@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // File operations
-router.post('/upload', upload.single('file'), enhancedFileController.uploadFile);
+router.post('/upload', upload.single('file'), handleUploadError, enhancedFileController.uploadFile);
 router.get('/', enhancedFileController.getFiles);
 router.get('/search', enhancedFileController.searchFiles);
 router.get('/stats', enhancedFileController.getFileStats);

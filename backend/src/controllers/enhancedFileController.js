@@ -1,23 +1,96 @@
 const enhancedTelegramService = require('../services/enhancedTelegramService');
 const telegramService = require('../services/telegramService'); // Keep old service for compatibility
 const database = require('../config/database');
+const { validateFile } = require('../middleware/upload');
+const path = require('path');
 
 class EnhancedFileController {
+    // Helper function to sanitize folder paths
+    sanitizeFolderPath(folderPath) {
+        if (!folderPath) return '';
+        
+        // Remove dangerous characters and normalize
+        const sanitized = folderPath
+            .replace(/[<>:"|?*]/g, '') // Remove forbidden characters
+            .replace(/\.\./g, '') // Remove parent directory references
+            .replace(/^[\/\\]+/, '') // Remove leading slashes
+            .replace(/[\/\\]+$/, '') // Remove trailing slashes
+            .replace(/[\/\\]+/g, '/') // Normalize separators
+            .trim();
+            
+        // Ensure it doesn't exceed reasonable length
+        return sanitized.substring(0, 255);
+    }
+    
+    // Helper function to validate storage configuration
+    validateStorageConfig(storageConfig) {
+        const errors = [];
+        
+        if (!storageConfig || typeof storageConfig !== 'object') {
+            errors.push('Invalid storage configuration');
+            return errors;
+        }
+        
+        const { method, chatId, botUsername } = storageConfig;
+        
+        // Validate method
+        const allowedMethods = ['saved_messages', 'private_channel', 'private_group', 'bot_storage'];
+        if (!method || !allowedMethods.includes(method)) {
+            errors.push('Invalid storage method. Must be one of: ' + allowedMethods.join(', '));
+        }
+        
+        // Validate chatId for non-saved_messages methods
+        if (method !== 'saved_messages') {
+            if (!chatId || (chatId !== 'me' && !/^-?\d+$/.test(chatId.toString()))) {
+                errors.push('Invalid chat ID for selected storage method');
+            }
+        }
+        
+        // Validate botUsername for bot storage
+        if (method === 'bot_storage') {
+            if (!botUsername || typeof botUsername !== 'string' || botUsername.trim() === '') {
+                errors.push('Bot username is required for bot storage method');
+            }
+        }
+        
+        return errors;
+    }
+
     async uploadFile(req, res) {
         try {
+            // Enhanced file validation
             if (!req.file) {
-                return res.status(400).json({ error: 'No file provided' });
+                return res.status(400).json({ 
+                    error: 'No file provided',
+                    message: 'Please select a file to upload'
+                });
+            }
+
+            // Additional file validation
+            const fileValidationErrors = validateFile(req.file);
+            if (fileValidationErrors.length > 0) {
+                return res.status(400).json({ 
+                    error: 'File validation failed',
+                    message: fileValidationErrors.join('; '),
+                    details: fileValidationErrors
+                });
             }
 
             const user = req.user;
-            const description = req.body.description || '';
-            const folderPath = req.body.folderPath || '';
+            const description = (req.body.description || '').trim();
+            const rawFolderPath = req.body.folderPath || '';
+            const folderPath = this.sanitizeFolderPath(rawFolderPath);
             const useCustomStorage = req.body.useCustomStorage === 'true';
 
-            console.log('Uploading file for user:', user.id);
-            console.log('Use custom storage:', useCustomStorage);
-            console.log('User storage preference:', user.storage_preference);
-            console.log('User storage config:', user.storage_config);
+            // Log upload attempt
+            console.log('Processing file upload:', {
+                userId: user.id,
+                fileName: req.file.originalname,
+                fileSize: req.file.size,
+                fileType: req.file.mimetype,
+                folderPath: folderPath,
+                useCustomStorage: useCustomStorage
+            });
 
             let uploadResult;
             let storageMethod = 'saved_messages';
@@ -60,73 +133,156 @@ class EnhancedFileController {
                 }
             }
 
-            // Upload using the determined storage method
-            if (storageConfig.method === 'saved_messages') {
-                // Use the original service for saved messages (more stable)
-                uploadResult = await telegramService.uploadFile(
-                    user.session_string,
-                    req.file,
-                    description
-                );
-                uploadResult.chatId = 'me';
-                uploadResult.method = 'saved_messages';
-            } else {
-                // Use enhanced service for other storage methods
-                uploadResult = await enhancedTelegramService.uploadFileWithMethod(
-                    user.session_string,
-                    req.file,
-                    description,
-                    storageConfig
-                );
+            // Validate storage configuration
+            const storageConfigErrors = this.validateStorageConfig(storageConfig);
+            if (storageConfigErrors.length > 0) {
+                return res.status(400).json({ 
+                    error: 'Invalid storage configuration',
+                    message: storageConfigErrors.join('; '),
+                    details: storageConfigErrors
+                });
             }
 
-            // Store file metadata in database
-            const db = database.getDb();
-            const fileId = await new Promise((resolve, reject) => {
-                db.run(
-                    'INSERT INTO files (user_id, file_name, file_type, file_size, telegram_message_id, telegram_chat_id, storage_method, folder_path, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [
-                        user.id,
-                        req.file.originalname,
-                        req.file.mimetype,
-                        req.file.size,
-                        uploadResult.messageId,
-                        uploadResult.chatId || chatId,
-                        uploadResult.method || storageMethod,
-                        folderPath,
+            // Upload using the determined storage method with enhanced error handling
+            try {
+                if (storageConfig.method === 'saved_messages') {
+                    // Use the original service for saved messages (more stable)
+                    uploadResult = await telegramService.uploadFile(
+                        user.session_string,
+                        req.file,
                         description
-                    ],
-                    function(err) {
-                        if (err) {
-                            console.error('Database error storing file metadata:', err);
-                            reject(err);
-                        } else {
-                            console.log('File metadata stored with ID:', this.lastID);
-                            resolve(this.lastID);
-                        }
-                    }
-                );
-            });
-
-            res.json({
-                success: true,
-                file: {
-                    id: fileId,
-                    fileName: req.file.originalname,
-                    fileSize: req.file.size,
-                    fileType: req.file.mimetype,
-                    telegramMessageId: uploadResult.messageId,
-                    telegramChatId: uploadResult.chatId || chatId,
-                    storageMethod: uploadResult.method || storageMethod,
-                    folderPath: folderPath,
-                    description: description
+                    );
+                    uploadResult.chatId = 'me';
+                    uploadResult.method = 'saved_messages';
+                } else {
+                    // Use enhanced service for other storage methods
+                    uploadResult = await enhancedTelegramService.uploadFileWithMethod(
+                        user.session_string,
+                        req.file,
+                        description,
+                        storageConfig
+                    );
                 }
-            });
+                
+                console.log('Upload successful:', {
+                    messageId: uploadResult.messageId,
+                    chatId: uploadResult.chatId,
+                    method: uploadResult.method
+                });
+                
+            } catch (uploadError) {
+                console.error('Upload failed:', uploadError);
+                
+                // Provide user-friendly error messages
+                let errorMessage = 'File upload failed';
+                if (uploadError.message.includes('FLOOD_WAIT')) {
+                    errorMessage = 'Upload rate limit exceeded. Please wait before trying again.';
+                } else if (uploadError.message.includes('FILE_TOO_BIG')) {
+                    errorMessage = 'File is too large for the selected storage method.';
+                } else if (uploadError.message.includes('ENTITY_BOUNDS_INVALID')) {
+                    errorMessage = 'Invalid storage destination. Please check your storage settings.';
+                } else if (uploadError.message.includes('CHAT_WRITE_FORBIDDEN')) {
+                    errorMessage = 'Cannot upload to the selected chat. Please check permissions.';
+                } else if (uploadError.message.includes('SESSION_EXPIRED')) {
+                    errorMessage = 'Your session has expired. Please log in again.';
+                } else if (uploadError.message.includes('timeout') || uploadError.message.includes('TIMEOUT')) {
+                    errorMessage = 'Upload timed out. Please try again with a smaller file or check your connection.';
+                }
+                
+                return res.status(500).json({
+                    error: 'Upload failed',
+                    message: errorMessage,
+                    details: process.env.NODE_ENV === 'development' ? uploadError.message : undefined
+                });
+            }
+
+            // Store file metadata in database with enhanced error handling
+            const db = database.getDb();
+            try {
+                const fileId = await new Promise((resolve, reject) => {
+                    db.run(
+                        'INSERT INTO files (user_id, file_name, file_type, file_size, telegram_message_id, telegram_chat_id, storage_method, folder_path, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        [
+                            user.id,
+                            req.file.originalname,
+                            req.file.mimetype,
+                            req.file.size,
+                            uploadResult.messageId,
+                            uploadResult.chatId || 'me',
+                            uploadResult.method || 'saved_messages',
+                            folderPath,
+                            description
+                        ],
+                        function(err) {
+                            if (err) {
+                                console.error('Database error storing file metadata:', err);
+                                reject(err);
+                            } else {
+                                console.log('File metadata stored with ID:', this.lastID);
+                                resolve(this.lastID);
+                            }
+                        }
+                    );
+                });
+
+                // Success response
+                res.json({
+                    success: true,
+                    file: {
+                        id: fileId,
+                        fileName: req.file.originalname,
+                        fileSize: req.file.size,
+                        fileType: req.file.mimetype,
+                        telegramMessageId: uploadResult.messageId,
+                        telegramChatId: uploadResult.chatId || 'me',
+                        storageMethod: uploadResult.method || 'saved_messages',
+                        folderPath: folderPath,
+                        description: description,
+                        uploadedAt: new Date().toISOString()
+                    },
+                    message: 'File uploaded successfully'
+                });
+                
+            } catch (dbError) {
+                console.error('Database error after successful upload:', dbError);
+                
+                // Try to clean up the uploaded file from Telegram
+                try {
+                    if (storageConfig.method === 'saved_messages') {
+                        await telegramService.deleteFile(user.session_string, uploadResult.messageId);
+                    } else {
+                        await enhancedTelegramService.deleteFileFromStorage(
+                            user.session_string, 
+                            uploadResult.messageId, 
+                            uploadResult.chatId
+                        );
+                    }
+                } catch (cleanupError) {
+                    console.error('Failed to cleanup uploaded file after database error:', cleanupError);
+                }
+                
+                return res.status(500).json({
+                    error: 'Database error',
+                    message: 'File uploaded but failed to save metadata. Please try again.'
+                });
+            }
 
         } catch (error) {
             console.error('Upload file error:', error);
-            res.status(500).json({ 
-                error: 'Failed to upload file: ' + error.message 
+            
+            // Enhanced error response
+            const isValidationError = error.message && (
+                error.message.includes('validation') || 
+                error.message.includes('Invalid') ||
+                error.message.includes('required')
+            );
+            
+            const statusCode = isValidationError ? 400 : 500;
+            
+            res.status(statusCode).json({ 
+                error: 'Upload failed',
+                message: error.message || 'An unexpected error occurred during file upload',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
@@ -500,17 +656,62 @@ class EnhancedFileController {
             const user = req.user;
             const { folderName, folderPath } = req.body;
 
-            if (!folderName) {
-                return res.status(400).json({ error: 'Folder name is required' });
+            // Enhanced validation
+            if (!folderName || typeof folderName !== 'string' || folderName.trim() === '') {
+                return res.status(400).json({ 
+                    error: 'Invalid folder name',
+                    message: 'Folder name is required and must be a non-empty string'
+                });
             }
 
-            console.log('Creating folder:', folderName, 'for user:', user.id);
+            const sanitizedFolderName = folderName.trim();
+            const sanitizedFolderPath = this.sanitizeFolderPath(folderPath || '');
+
+            // Validate folder name for dangerous characters
+            if (/[<>:"|?*\\\/]/.test(sanitizedFolderName)) {
+                return res.status(400).json({ 
+                    error: 'Invalid folder name',
+                    message: 'Folder name contains invalid characters. Please use only letters, numbers, spaces, and basic punctuation.'
+                });
+            }
+
+            // Check name length
+            if (sanitizedFolderName.length > 100) {
+                return res.status(400).json({ 
+                    error: 'Invalid folder name',
+                    message: 'Folder name must be 100 characters or less'
+                });
+            }
+
+            console.log('Creating folder:', sanitizedFolderName, 'at path:', sanitizedFolderPath, 'for user:', user.id);
 
             const db = database.getDb();
+
+            // Check for duplicate folder names in the same path
+            const existingFolder = await new Promise((resolve, reject) => {
+                db.get(
+                    'SELECT id, folder_name FROM folders WHERE user_id = ? AND folder_name = ? AND folder_path = ?',
+                    [user.id, sanitizedFolderName, sanitizedFolderPath],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+
+            if (existingFolder) {
+                return res.status(409).json({ 
+                    error: 'Folder already exists',
+                    message: `A folder named "${sanitizedFolderName}" already exists in this location`,
+                    existingFolderId: existingFolder.id
+                });
+            }
+
+            // Create the folder
             const folderId = await new Promise((resolve, reject) => {
                 db.run(
                     'INSERT INTO folders (user_id, folder_name, folder_path) VALUES (?, ?, ?)',
-                    [user.id, folderName, folderPath || ''],
+                    [user.id, sanitizedFolderName, sanitizedFolderPath],
                     function(err) {
                         if (err) {
                             console.error('Database error creating folder:', err);
@@ -527,15 +728,18 @@ class EnhancedFileController {
                 success: true,
                 folder: {
                     id: folderId,
-                    folderName: folderName,
-                    folderPath: folderPath || ''
-                }
+                    folderName: sanitizedFolderName,
+                    folderPath: sanitizedFolderPath,
+                    createdAt: new Date().toISOString()
+                },
+                message: 'Folder created successfully'
             });
 
         } catch (error) {
             console.error('Create folder error:', error);
             res.status(500).json({ 
-                error: 'Failed to create folder: ' + error.message 
+                error: 'Failed to create folder',
+                message: error.message || 'An unexpected error occurred while creating the folder'
             });
         }
     }

@@ -116,10 +116,41 @@ const createTables = async () => {
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 );
-            `, (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
+            `);
+
+            // Create storage_channels table for auto-created channels
+            db.run(`
+                CREATE TABLE IF NOT EXISTS storage_channels (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    channel_name TEXT NOT NULL,
+                    category TEXT DEFAULT 'general',
+                    access_hash TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                );
+            `);
+
+            // Create indexes for better performance
+            db.run(`CREATE INDEX IF NOT EXISTS idx_files_user_id ON files(user_id);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_files_folder_path ON files(folder_path);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_files_storage_method ON files(storage_method);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_files_created_at ON files(created_at);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_files_user_folder ON files(user_id, folder_path);`);
+            
+            db.run(`CREATE INDEX IF NOT EXISTS idx_folders_user_id ON folders(user_id);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_folders_path ON folders(folder_path);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_folders_user_path ON folders(user_id, folder_path);`);
+            
+            db.run(`CREATE INDEX IF NOT EXISTS idx_storage_channels_user_id ON storage_channels(user_id);`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_storage_channels_channel_id ON storage_channels(channel_id);`);
+            
+            db.run(`CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);`);
+            
+            console.log('Database indexes created/verified');
+            
+            resolve();
         });
     });
 };
