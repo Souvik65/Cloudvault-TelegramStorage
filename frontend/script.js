@@ -81,27 +81,38 @@ function getAuthHeaders() {
     return headers;
 }
 
+// In your apiCall function, add better error handling:
 async function apiCall(endpoint, options = {}) {
     try {
         const url = `${API_BASE_URL}${endpoint}`;
         const config = {
-            headers: getAuthHeaders(),
+            headers: {
+                'Content-Type': 'application/json',
+                ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+            },
             ...options
         };
 
-        if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+        if (config.body && typeof config.body === 'object') {
             config.body = JSON.stringify(config.body);
-            config.headers['Content-Type'] = 'application/json';
-        }
-
-        if (config.body instanceof FormData) {
-            delete config.headers['Content-Type'];
         }
 
         const response = await fetch(url, config);
         const data = await response.json();
 
         if (!response.ok) {
+            // Handle JWT-related errors
+            if (data.code && ['INVALID_SIGNATURE', 'TOKEN_EXPIRED', 'MALFORMED_TOKEN'].includes(data.code)) {
+                console.log('Token issue detected, clearing auth data');
+                clearAuthData();
+                // Optionally redirect to login or show login form
+                if (document.getElementById('loginContainer')) {
+                    document.getElementById('loginContainer').style.display = 'flex';
+                    document.getElementById('appContainer').style.display = 'none';
+                }
+                throw new Error('Session expired. Please login again.');
+            }
+            
             throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
         }
 
@@ -264,42 +275,27 @@ function getStorageMethodIcon(method) {
 // AUTHENTICATION FUNCTIONS (Same as before)
 // ============================================================================
 async function sendOTP() {
-    const phoneNumber = document.getElementById('loginPhone').value.trim();
-    const sendOtpBtn = document.getElementById('sendOtpBtn');
-
-    if (!phoneNumber) {
-        showError('Please enter your phone number');
-        return;
-    }
-
-    if (!phoneNumber.startsWith('+')) {
-        showError('Please enter phone number with country code (e.g., +1234567890)');
-        return;
-    }
-
     try {
-        sendOtpBtn.innerHTML = '<div class="loading"></div> Sending OTP...';
-        sendOtpBtn.disabled = true;
-
-        const result = await apiCall('/auth/send-code', {
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        
+        const response = await apiCall('/auth/send-code', {
             method: 'POST',
             body: { phoneNumber }
         });
 
-        if (result.success) {
-            pendingPhoneNumber = phoneNumber;
-            showSuccess('Verification code sent to your Telegram!');
-            document.getElementById('phoneStep').classList.remove('active');
-            document.getElementById('otpStep').classList.add('active');
-            document.getElementById('otpCode').focus();
-        } else {
-            throw new Error('Failed to send OTP');
+        if (response.success) {
+            // Store the phone code hash
+            currentPhoneCodeHash = response.phoneCodeHash;
+            
+            // Show OTP input section
+            document.getElementById('phoneSection').style.display = 'none';
+            document.getElementById('otpSection').style.display = 'block';
+            
+            showNotification('OTP sent successfully! Please check your Telegram app.', 'success');
         }
     } catch (error) {
-        showError(error.message);
-    } finally {
-        sendOtpBtn.innerHTML = '📱 Send OTP';
-        sendOtpBtn.disabled = false;
+        console.error('Send OTP error:', error);
+        showNotification(error.message || 'Failed to send OTP', 'error');
     }
 }
 

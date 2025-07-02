@@ -249,14 +249,14 @@ async function start() {
             console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🆔 Process ID: ${process.pid}`);
             console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-            console.log(`🗄️ Database: PostgreSQL`);
+            console.log(`🗄️ Database: ${database.isPostgreSQL() ? 'PostgreSQL' : 'SQLite'}`);
             
             // Log configuration status
             console.log('📋 Configuration:');
             console.log(`   - Telegram API ID: ${process.env.TELEGRAM_API_ID ? '✅ Set' : '❌ Missing'}`);
             console.log(`   - Telegram API Hash: ${process.env.TELEGRAM_API_HASH ? '✅ Set' : '❌ Missing'}`);
             console.log(`   - JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
-            console.log(`   - Database URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
+            console.log(`   - Database URL: ${process.env.DATABASE_URL ? '✅ Set (PostgreSQL)' : '❌ Not Set (Using SQLite)'}`);
         });
         
         // Server configuration

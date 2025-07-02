@@ -1,74 +1,73 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
-const database = require('../config/database');
 
 const router = express.Router();
 
 // Validation middleware
-const validateSendCode = [
+const validatePhoneNumber = [
     body('phoneNumber')
-        .matches(/^\+[1-9]\d{1,14}$/)
-        .withMessage('Please provide a valid phone number with country code')
+        .isMobilePhone()
+        .withMessage('Please provide a valid phone number')
+        .custom(value => {
+            if (!value.startsWith('+')) {
+                throw new Error('Phone number must include country code (e.g., +1234567890)');
+            }
+            return true;
+        })
 ];
 
-const validateVerifyCode = [
+const validateVerificationCode = [
     body('phoneNumber')
-        .matches(/^\+[1-9]\d{1,14}$/)
-        .withMessage('Please provide a valid phone number with country code'),
+        .isMobilePhone()
+        .withMessage('Please provide a valid phone number'),
     body('code')
         .isLength({ min: 4, max: 6 })
-        .withMessage('Code must be 4-6 digits')
+        .isNumeric()
+        .withMessage('Verification code must be 4-6 digits'),
+    body('phoneCodeHash')
+        .notEmpty()
+        .withMessage('Phone code hash is required')
 ];
 
-const validateVerifyPassword = [
-    body('phoneNumber')
-        .matches(/^\+[1-9]\d{1,14}$/)
-        .withMessage('Please provide a valid phone number with country code'),
-    body('password')
-        .isLength({ min: 1 })
-        .withMessage('Password is required')
-];
-
-// Debug endpoint to check session status
-router.get('/debug-session/:phoneNumber', async (req, res) => {
-    try {
-        const { phoneNumber } = req.params;
-        const db = database.getDb();
-        
-        const sessions = await new Promise((resolve, reject) => {
-            db.all(
-                'SELECT * FROM auth_sessions WHERE phone_number = ?',
-                [phoneNumber],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
-            );
-        });
-        
-        const now = new Date().toISOString();
-        
-        res.json({
-            phoneNumber,
-            currentTime: now,
-            sessions: sessions.map(session => ({
-                ...session,
-                isExpired: new Date(session.expires_at) < new Date(now),
-                timeUntilExpiry: new Date(session.expires_at).getTime() - new Date(now).getTime()
+// Helper function to handle validation errors
+const handleValidationErrors = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            error: 'Validation failed',
+            details: errors.array().map(err => ({
+                field: err.path,
+                message: err.msg,
+                value: err.value
             }))
         });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
-});
+    next();
+};
 
 // Routes
-router.post('/send-code', validateSendCode, authController.sendCode);
-router.post('/verify-code', validateVerifyCode, authController.verifyCode);
-router.post('/verify-password', validateVerifyPassword, authController.verifyPassword);
-router.get('/me', authMiddleware, authController.getMe);
-router.post('/logout', authMiddleware, authController.logout);
+router.post('/send-code', 
+    validatePhoneNumber,
+    handleValidationErrors,
+    authController.sendCode
+);
+
+router.post('/verify-code',
+    validateVerificationCode,
+    handleValidationErrors,
+    authController.verifyCode
+);
+
+router.get('/me',
+    authMiddleware,
+    authController.getMe
+);
+
+router.post('/logout',
+    authMiddleware,
+    authController.logout
+);
 
 module.exports = router;
