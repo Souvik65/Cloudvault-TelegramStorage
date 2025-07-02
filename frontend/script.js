@@ -371,31 +371,35 @@ async function verifyOTP() {
         console.log('Verify OTP response:', result);
 
         if (result.success) {
+            // Login successful without 2FA
             saveAuthData(result.token, result.user);
             showSuccess('Successfully logged in!');
             showMainApp();
         } else if (result.requiresPassword) {
+            // 2FA is enabled, show password step
             document.getElementById('otpStep').classList.remove('active');
             document.getElementById('passwordStep').classList.add('active');
             document.getElementById('twoFaPassword').focus();
+            showSuccess('Please enter your Two-Factor Authentication password');
         } else {
-            throw new Error('Login failed');
+            throw new Error(result.message || 'Login failed');
         }
     } catch (error) {
         console.error('Verify OTP error:', error);
-        showError(error.message);
+        showError(error.message || 'Failed to verify OTP');
     } finally {
         verifyOtpBtn.innerHTML = '✅ Verify & Login';
         verifyOtpBtn.disabled = false;
     }
 }
 
+// Update the verifyPassword function 
 async function verifyPassword() {
     const password = document.getElementById('twoFaPassword').value.trim();
     const verifyPasswordBtn = document.getElementById('verifyPasswordBtn');
 
     if (!password) {
-        showError('Please enter your 2FA password');
+        showError('Please enter your Two-Factor Authentication password');
         return;
     }
 
@@ -409,6 +413,8 @@ async function verifyPassword() {
         verifyPasswordBtn.innerHTML = '<div class="loading"></div> Verifying...';
         verifyPasswordBtn.disabled = true;
 
+        console.log('Verifying 2FA password for:', pendingPhoneNumber);
+
         const result = await apiCall('/auth/verify-password', {
             method: 'POST',
             body: {
@@ -417,15 +423,18 @@ async function verifyPassword() {
             }
         });
 
+        console.log('Verify password response:', result);
+
         if (result.success) {
             saveAuthData(result.token, result.user);
-            showSuccess('Successfully logged in!');
+            showSuccess('Successfully logged in with Two-Factor Authentication!');
             showMainApp();
         } else {
-            throw new Error('Invalid password');
+            throw new Error(result.message || 'Invalid password');
         }
     } catch (error) {
-        showError(error.message);
+        console.error('Verify password error:', error);
+        showError(error.message || 'Failed to verify password');
     } finally {
         verifyPasswordBtn.innerHTML = '🔐 Verify Password';
         verifyPasswordBtn.disabled = false;
