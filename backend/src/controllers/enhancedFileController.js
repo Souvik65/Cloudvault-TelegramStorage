@@ -852,7 +852,7 @@ class EnhancedFileController {
         try {
             const user = req.user;
 
-            console.log('Getting file statistics for user:', user.id);
+            console.log('Getting comprehensive file statistics for user:', user.id);
 
             const db = database.getDb();
 
@@ -861,7 +861,10 @@ class EnhancedFileController {
                 db.get(
                     `SELECT 
                         COUNT(*) as totalFiles,
-                        SUM(file_size) as totalStorage
+                        SUM(file_size) as totalStorage,
+                        AVG(file_size) as averageFileSize,
+                        MIN(file_size) as smallestFile,
+                        MAX(file_size) as largestFile
                     FROM files WHERE user_id = ?`,
                     [user.id],
                     (err, row) => {
@@ -871,13 +874,16 @@ class EnhancedFileController {
                 );
             });
 
-            // Get storage method breakdown
+            // Get storage method breakdown with enhanced details
             const storageBreakdown = await new Promise((resolve, reject) => {
                 db.all(
                     `SELECT 
                         storage_method,
                         COUNT(*) as count,
-                        SUM(file_size) as size
+                        SUM(file_size) as size,
+                        AVG(file_size) as averageSize,
+                        MIN(created_at) as firstUpload,
+                        MAX(created_at) as lastUpload
                     FROM files 
                     WHERE user_id = ? 
                     GROUP BY storage_method 
@@ -890,13 +896,14 @@ class EnhancedFileController {
                 );
             });
 
-            // Get file type breakdown
+            // Enhanced file type breakdown with categorization
             const typeBreakdown = await new Promise((resolve, reject) => {
                 db.all(
                     `SELECT 
                         file_type,
                         COUNT(*) as count,
-                        SUM(file_size) as size
+                        SUM(file_size) as size,
+                        AVG(file_size) as averageSize
                     FROM files 
                     WHERE user_id = ? 
                     GROUP BY file_type 
@@ -909,20 +916,127 @@ class EnhancedFileController {
                 );
             });
 
+            // Categorize file types
+            const categorizeFileType = (mimeType) => {
+                if (!mimeType) return 'unknown';
+                if (mimeType.startsWith('image/')) return 'images';
+                if (mimeType.startsWith('video/')) return 'videos';
+                if (mimeType.startsWith('audio/')) return 'audio';
+                if (mimeType.startsWith('text/') || mimeType.includes('document') || mimeType.includes('pdf')) return 'documents';
+                if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar') || mimeType.includes('7z')) return 'archives';
+                return 'other';
+            };
+
+            // Group by categories
+            const categoryStats = typeBreakdown.reduce((acc, item) => {
+                const category = categorizeFileType(item.file_type);
+                if (!acc[category]) {
+                    acc[category] = { count: 0, size: 0, types: [] };
+                }
+                acc[category].count += item.count;
+                acc[category].size += item.size || 0;
+                acc[category].types.push({
+                    mimeType: item.file_type,
+                    count: item.count,
+                    size: item.size
+                });
+                return acc;
+            }, {});
+
+            // Get folder statistics
+            const folderStats = await new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT 
+                        folder_path,
+                        COUNT(*) as fileCount,
+                        SUM(file_size) as totalSize
+                    FROM files 
+                    WHERE user_id = ? 
+                    GROUP BY folder_path 
+                    ORDER BY fileCount DESC`,
+                    [user.id],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve(rows || []);
+                    }
+                );
+            });
+
+            // Get recent activity (last 30 days)
+            const recentActivity = await new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT 
+                        DATE(created_at) as date,
+                        COUNT(*) as uploads,
+                        SUM(file_size) as sizeUploaded
+                    FROM files 
+                    WHERE user_id = ? 
+                    AND created_at >= datetime('now', '-30 days')
+                    GROUP BY DATE(created_at) 
+                    ORDER BY date DESC`,
+                    [user.id],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve(rows || []);
+                    }
+                );
+            });
+
+            // Calculate additional insights
+            const insights = {
+                totalFiles: stats.totalFiles || 0,
+                totalStorage: stats.totalStorage || 0,
+                averageFileSize: Math.round(stats.averageFileSize || 0),
+                smallestFile: stats.smallestFile || 0,
+                largestFile: stats.largestFile || 0,
+                storageUtilization: {
+                    byMethod: storageBreakdown.map(item => ({
+                        method: item.storage_method,
+                        count: item.count,
+                        size: item.size || 0,
+                        percentage: stats.totalFiles > 0 ? Math.round((item.count / stats.totalFiles) * 100) : 0,
+                        averageSize: Math.round(item.averageSize || 0),
+                        firstUpload: item.firstUpload,
+                        lastUpload: item.lastUpload
+                    })),
+                    byCategory: Object.entries(categoryStats).map(([category, data]) => ({
+                        category,
+                        count: data.count,
+                        size: data.size,
+                        percentage: stats.totalFiles > 0 ? Math.round((data.count / stats.totalFiles) * 100) : 0,
+                        types: data.types.sort((a, b) => b.count - a.count)
+                    })).sort((a, b) => b.count - a.count),
+                    byFolder: folderStats.map(item => ({
+                        path: item.folder_path || '/',
+                        fileCount: item.fileCount,
+                        totalSize: item.totalSize || 0,
+                        percentage: stats.totalFiles > 0 ? Math.round((item.fileCount / stats.totalFiles) * 100) : 0
+                    }))
+                },
+                recentActivity: recentActivity,
+                summary: {
+                    mostUsedStorageMethod: storageBreakdown.length > 0 ? storageBreakdown[0].storage_method : null,
+                    mostCommonFileType: typeBreakdown.length > 0 ? categorizeFileType(typeBreakdown[0].file_type) : null,
+                    activeFolder: folderStats.length > 0 ? folderStats[0].folder_path || '/' : '/',
+                    recentUploads: recentActivity.length > 0 ? recentActivity.reduce((sum, day) => sum + day.uploads, 0) : 0
+                }
+            };
+
+            // Add performance timing
+            const responseTime = Date.now();
+
             res.json({
                 success: true,
-                stats: {
-                    totalFiles: stats.totalFiles || 0,
-                    totalStorage: stats.totalStorage || 0,
-                    storageBreakdown: storageBreakdown,
-                    typeBreakdown: typeBreakdown
-                }
+                stats: insights,
+                generatedAt: new Date().toISOString(),
+                responseTime: `${Date.now() - responseTime}ms`
             });
 
         } catch (error) {
             console.error('Get file stats error:', error);
             res.status(500).json({ 
-                error: 'Failed to get file statistics: ' + error.message 
+                error: 'Failed to get file statistics',
+                message: error.message || 'An unexpected error occurred while generating statistics'
             });
         }
     }

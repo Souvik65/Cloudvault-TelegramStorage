@@ -408,6 +408,89 @@ class EnhancedTelegramService {
         return uploadResult;
     }
 
+    // Verify if a file exists in Telegram storage
+    async verifyFileExists(sessionString, messageId, chatId = 'me') {
+        return await this.withClient(sessionString, async (client) => {
+            try {
+                console.log(`Verifying file existence: messageId=${messageId}, chatId=${chatId}`);
+                
+                let targetEntity;
+                if (chatId === 'me') {
+                    const me = await client.getMe();
+                    targetEntity = me.id;
+                } else {
+                    targetEntity = parseInt(chatId);
+                }
+
+                // Try to get the message
+                const messages = await client.getMessages(targetEntity, {
+                    ids: [parseInt(messageId)]
+                });
+
+                if (messages && messages.length > 0 && messages[0]) {
+                    const message = messages[0];
+                    // Check if message has media (file)
+                    return !!(message.media && (message.media.document || message.media.photo));
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('Error verifying file existence:', error);
+                // If we can't access the file, assume it doesn't exist
+                return false;
+            }
+        }, 8000);
+    }
+
+    // Get file information from Telegram
+    async getFileInfo(sessionString, messageId, chatId = 'me') {
+        return await this.withClient(sessionString, async (client) => {
+            try {
+                console.log(`Getting file info: messageId=${messageId}, chatId=${chatId}`);
+                
+                let targetEntity;
+                if (chatId === 'me') {
+                    const me = await client.getMe();
+                    targetEntity = me.id;
+                } else {
+                    targetEntity = parseInt(chatId);
+                }
+
+                const messages = await client.getMessages(targetEntity, {
+                    ids: [parseInt(messageId)]
+                });
+
+                if (messages && messages.length > 0 && messages[0]) {
+                    const message = messages[0];
+                    
+                    if (message.media && message.media.document) {
+                        return {
+                            size: message.media.document.size,
+                            mimeType: message.media.document.mimeType,
+                            fileName: message.media.document.attributes?.find(attr => attr.fileName)?.fileName,
+                            date: message.date
+                        };
+                    } else if (message.media && message.media.photo) {
+                        // For photos, we can't get exact size without downloading
+                        return {
+                            size: null,
+                            mimeType: 'image/jpeg',
+                            fileName: 'photo.jpg',
+                            date: message.date
+                        };
+                    }
+                }
+                
+                throw new Error('File not found or has no media');
+                
+            } catch (error) {
+                console.error('Error getting file info:', error);
+                throw error;
+            }
+        }, 10000);
+    }
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
