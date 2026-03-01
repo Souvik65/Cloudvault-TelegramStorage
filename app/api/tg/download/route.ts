@@ -1,0 +1,69 @@
+import { NextResponse } from 'next/server';
+import { getClient } from '@/lib/tg-client';
+import { Api } from 'telegram';
+
+export async function GET(req: Request) {
+  try {
+    const sessionString = req.headers.get('x-tg-session');
+    if (!sessionString) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    let channelId: string | number | any = searchParams.get('channelId') || 'me';
+
+    if (channelId !== 'me' && !isNaN(Number(channelId))) {
+      if (!channelId.startsWith('-100')) {
+        channelId = '-100' + channelId;
+      }
+    }
+
+    const messageId = searchParams.get('messageId');
+
+    if (!messageId) {
+      return NextResponse.json({ error: 'Missing messageId' }, { status: 400 });
+    }
+
+    const client = await getClient(sessionString);
+    const messages = await client.getMessages(channelId, { ids: [Number(messageId)] });
+
+    if (!messages || messages.length === 0 || !messages[0].document) {
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    const message = messages[0];
+    const buffer = await client.downloadMedia(message, {});
+
+    if (!buffer) {
+      return NextResponse.json({ error: 'Failed to download file' }, { status: 500 });
+    }
+
+    let contentType = 'application/octet-stream';
+    let filename = 'download';
+
+    if (message.document) {
+      contentType = message.document.mimeType;
+      const attributes = message.document.attributes;
+      for (const attr of attributes) {
+        if (attr instanceof Api.DocumentAttributeFilename) {
+          filename = attr.fileName;
+        }
+      }
+    }
+
+    const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as any);
+    const safeFilename = filename.replace(/[^\w.\-]/g, '_');
+    const encodedFilename = encodeURIComponent(filename);
+
+    return new NextResponse(bufferData, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
+        'Content-Length': bufferData.length.toString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('Download file error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
