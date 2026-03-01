@@ -24,36 +24,86 @@ export async function GET(req: Request) {
 
     const client = await getClient(sessionString);
 
-    const messages = await client.getMessages(channelId, { limit: 1000 });
+    // Paginate through all messages to get every file in the channel
+    const allMessages = [];
+    let offsetId = 0;
+    while (true) {
+      const batch = await client.getMessages(channelId, { limit: 100, offsetId });
+      if (!batch.length) break;
+      allMessages.push(...batch);
+      offsetId = batch[batch.length - 1].id;
+      // If we got fewer than 100, we've reached the beginning
+      if (batch.length < 100) break;
+    }
 
     const files = [];
 
-    for (const msg of messages) {
-      if (msg.document || msg.message) {
-        let metadata = null;
+    for (const msg of allMessages) {
+      // Include any message that has a document (file uploaded via app or directly to Telegram)
+      if (msg.document) {
+        let name = `file-${msg.id}`;
+        let folderPath = '/';
+        let uploadDate = msg.date ? msg.date * 1000 : Date.now();
+        let extraMeta: Record<string, any> = {};
+        let isDirectUpload = true;
+
+        // Try to parse app-specific metadata from caption
         try {
           const text = msg.message || '';
           if (text.startsWith('{') && text.endsWith('}')) {
-            metadata = JSON.parse(text);
+            const parsed = JSON.parse(text);
+            name = parsed.name || name;
+            folderPath = parsed.folderPath || folderPath;
+            uploadDate = parsed.uploadDate || uploadDate;
+            // Spread any other app metadata fields
+            const { name: _n, folderPath: _f, uploadDate: _u, ...rest } = parsed;
+            extraMeta = rest;
+            isDirectUpload = false; // Has app metadata → uploaded via this app
           }
-        } catch (e) {
-          // Include file with fallback metadata so it's not hidden
-          metadata = {
-            name: `message-${msg.id}`,
-            folderPath: '/',
-            uploadDate: msg.date ? msg.date * 1000 : Date.now(),
-          };
+        } catch {
+          // Not app metadata — use fallback values derived from the document itself
         }
 
-        if (metadata) {
-          files.push({
-            id: msg.id,
-            date: msg.date,
-            ...metadata,
-            hasDocument: !!msg.document,
-            size: msg.document ? msg.document.size.toJSNumber() : 0,
-            mimeType: msg.document ? msg.document.mimeType : 'folder',
-          });
+        // Always try to get filename from document attributes as fallback
+        if (isDirectUpload) {
+          const docAttrs = msg.document.attributes || [];
+          const filenameAttr = docAttrs.find(
+            (a: any) => a.className === 'DocumentAttributeFilename'
+          ) as any;
+          if (filenameAttr?.fileName) {
+            name = filenameAttr.fileName;
+          }
+        }
+
+        files.push({
+          id: msg.id,
+          date: msg.date,
+          name,
+          folderPath,
+          uploadDate,
+          ...extraMeta,
+          hasDocument: true,
+          isDirectUpload,
+          size: msg.document.size.toJSNumber(),
+          mimeType: msg.document.mimeType,
+        });
+      } else if (msg.message) {
+        // Text-only messages that contain app metadata (e.g. folder entries)
+        try {
+          const text = msg.message;
+          if (text.startsWith('{') && text.endsWith('}')) {
+            const metadata = JSON.parse(text);
+            files.push({
+              id: msg.id,
+              date: msg.date,
+              ...metadata,
+              hasDocument: false,
+              size: 0,
+              mimeType: 'folder',
+            });
+          }
+        } catch {
+          // Plain text message, not a file/folder entry — skip
         }
       }
     }

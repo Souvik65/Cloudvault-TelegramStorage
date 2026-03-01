@@ -16,6 +16,15 @@ interface FileListViewProps {
   onPreview: (file: FileMetadata) => void;
 }
 
+function canPreview(mimeType: string): boolean {
+  return (
+    mimeType?.startsWith('image/') ||
+    mimeType?.startsWith('video/') ||
+    mimeType === 'application/pdf' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  );
+}
+
 function getIcon(mimeType: string, name: string) {
   if (!mimeType || mimeType === 'folder') return <Folder className="w-5 h-5 text-[#2AABEE]" />;
   if (mimeType.startsWith('image/')) return <ImageIcon className="w-5 h-5 text-[#4FC3F7]" />;
@@ -46,6 +55,7 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
       {files.map((file, i) => (
         <motion.div
           key={file.id}
+          data-file-card
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.02, duration: 0.2 }}
@@ -72,7 +82,7 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
             {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '\u2014'}
           </span>
           <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            {file.mimeType?.startsWith('image/') && (
+            {canPreview(file.mimeType) && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onPreview(file); }}>
                 <Eye className="w-3.5 h-3.5" />
               </Button>
@@ -82,9 +92,11 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
                 <Download className="w-3.5 h-3.5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#E53935]" onClick={(e) => { e.stopPropagation(); onDelete([file.id]); }}>
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
+            {!file.isVirtualChannelFolder && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#E53935]" onClick={(e) => { e.stopPropagation(); onDelete([file.id]); }}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
         </motion.div>
       ))}

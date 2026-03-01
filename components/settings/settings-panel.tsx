@@ -10,7 +10,7 @@ import { Plus, Check } from 'lucide-react';
 
 export function SettingsPanel() {
   const { sessionString } = useAuthStore();
-  const { storageChannelId, setStorageChannelId, setFiles } = useFileStore();
+  const { storageChannelId, setStorageChannelId, setStorageChannelName, setFiles, setCurrentFolder } = useFileStore();
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -58,7 +58,7 @@ export function SettingsPanel() {
       await fetchChannels();
 
       // Auto-select the new channel
-      handleSelectChannel(data.channelId.toString());
+      handleSelectChannel(data.channelId.toString(), newChannelName);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -66,8 +66,10 @@ export function SettingsPanel() {
     }
   };
 
-  const handleSelectChannel = async (channelId: string) => {
+  const handleSelectChannel = async (channelId: string, channelName: string) => {
     setStorageChannelId(channelId);
+    setStorageChannelName(channelName);
+    setCurrentFolder('/');
     toast.success('Storage channel updated');
 
     // Refresh files for the new channel
@@ -98,7 +100,7 @@ export function SettingsPanel() {
                 ? 'border-[#2AABEE] bg-[rgba(42,171,238,0.1)]'
                 : 'border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[#1C2733]'
             }`}
-            onClick={() => handleSelectChannel('me')}
+            onClick={() => handleSelectChannel('me', 'Saved Messages')}
           >
             <div>
               <p className="font-medium text-sm text-white">Saved Messages</p>
@@ -118,7 +120,7 @@ export function SettingsPanel() {
                     ? 'border-[#2AABEE] bg-[rgba(42,171,238,0.1)]'
                     : 'border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[#1C2733]'
                 }`}
-                onClick={() => handleSelectChannel(channel.id.toString())}
+                onClick={() => handleSelectChannel(channel.id.toString(), channel.title)}
               >
                 <div>
                   <p className="font-medium text-sm text-white">{channel.title}</p>
