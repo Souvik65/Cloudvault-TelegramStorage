@@ -40,7 +40,7 @@ export default function Home() {
 
   if (!sessionString) {
     return (
-      <main className="min-h-screen bg-[#17212B] flex items-center justify-center p-4">
+      <main className="min-h-dvh bg-[#17212B] flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -78,7 +78,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-40 md:z-auto transition-transform duration-300`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative h-screen md:h-full z-40 md:z-auto transition-transform duration-300`}>
         <Sidebar />
       </div>
 

@@ -9,30 +9,46 @@ interface RightPanelProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  width?: string;
 }
 
-export function RightPanel({ isOpen, onClose, title, children, width = 'w-80' }: RightPanelProps) {
+export function RightPanel({ isOpen, onClose, title, children }: RightPanelProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ x: '100%', opacity: 0.5 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: '100%', opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-          className={`${width} h-full bg-[#0E1621] border-l border-[rgba(255,255,255,0.06)] flex flex-col shrink-0 z-20`}
-        >
-          <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.06)] shrink-0">
-            <h2 className="text-sm font-semibold text-white">{title}</h2>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-[#6C7883] hover:text-white">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            {children}
-          </div>
-        </motion.div>
+        <>
+          {/* Mobile backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={onClose}
+          />
+
+          {/* Panel — full-screen overlay on mobile, sidebar on desktop */}
+          <motion.div
+            initial={{ x: '100%', opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+            className="fixed right-0 top-0 h-full w-full z-40 md:relative md:w-80 md:z-20 bg-[#0E1621] border-l border-[rgba(255,255,255,0.06)] flex flex-col shrink-0"
+          >
+            <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.06)] shrink-0">
+              <h2 className="text-sm font-semibold text-white">{title}</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-10 w-10 text-[#6C7883] hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {children}
+            </div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

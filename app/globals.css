@@ -18,6 +18,9 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+  }
   body {
     background-color: #17212B;
     color: #FFFFFF;
@@ -25,6 +28,8 @@
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
 }
 
@@ -48,4 +53,25 @@
 ::selection {
   background: rgba(42, 171, 238, 0.3);
   color: #FFFFFF;
+}
+
+/* Mobile: remove tap highlight flash and prevent 300ms delay */
+button, a, input, textarea, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Country dropdown scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(42, 171, 238, 0.4);
 }

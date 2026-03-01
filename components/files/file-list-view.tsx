@@ -81,20 +81,20 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
           <span className="w-28 text-right text-xs text-[#6C7883] hidden md:block shrink-0">
             {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '\u2014'}
           </span>
-          <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="w-24 flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
             {canPreview(file.mimeType) && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onPreview(file); }}>
-                <Eye className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onPreview(file); }}>
+                <Eye className="w-4 h-4" />
               </Button>
             )}
             {file.hasDocument && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onDownload(file); }}>
-                <Download className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onDownload(file); }}>
+                <Download className="w-4 h-4" />
               </Button>
             )}
             {!file.isVirtualChannelFolder && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#6C7883] hover:text-[#E53935]" onClick={(e) => { e.stopPropagation(); onDelete([file.id]); }}>
-                <Trash2 className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#E53935]" onClick={(e) => { e.stopPropagation(); onDelete([file.id]); }}>
+                <Trash2 className="w-4 h-4" />
               </Button>
             )}
           </div>

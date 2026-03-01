@@ -11,7 +11,7 @@ export function ViewToggle() {
     <div className="flex items-center bg-[#242F3D] rounded-lg p-1 gap-0.5">
       <button
         onClick={() => setViewMode('grid')}
-        className={`relative p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
+        className={`relative p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
       >
         {viewMode === 'grid' && (
           <motion.div
@@ -24,7 +24,7 @@ export function ViewToggle() {
       </button>
       <button
         onClick={() => setViewMode('list')}
-        className={`relative p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
+        className={`relative p-2 rounded-md transition-colors ${viewMode === 'list' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
       >
         {viewMode === 'list' && (
           <motion.div

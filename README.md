@@ -94,7 +94,7 @@ TG_API_HASH=your_api_hash
 
 # Optional — Google Gemini API key for AI image analysis
 # Obtain from https://aistudio.google.com/apikey
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ---

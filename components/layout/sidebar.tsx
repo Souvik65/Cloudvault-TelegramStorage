@@ -1,16 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useFileStore } from '@/store/use-file-store';
 import { useUIStore } from '@/store/use-ui-store';
 import { Button } from '@/components/ui/button';
-import { Cloud, HardDrive, LogOut, Settings, Image as ImageIcon, FileText, Video } from 'lucide-react';
+import { FeedbackModal } from '@/components/feedback/feedback-modal';
+import { Cloud, HardDrive, LogOut, MessageSquare, Settings, Image as ImageIcon, FileText, Video } from 'lucide-react';
 import { formatSize } from '@/lib/utils';
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
   const { files, currentFolder, setCurrentFolder } = useFileStore();
-  const { openRightPanel } = useUIStore();
+  const { openRightPanel, setSidebarOpen } = useUIStore();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const closeSidebarOnMobile = () => setSidebarOpen(false);
 
   const totalStorage = files.reduce((acc, file) => acc + (file.size || 0), 0);
   const totalStorageFormatted = formatSize(totalStorage);
@@ -26,7 +31,10 @@ export function Sidebar() {
         <div className="w-10 h-10 bg-[#2AABEE] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#2AABEE]/20">
           <Cloud className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold text-white tracking-tight">CloudVault</h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-white tracking-tight leading-tight">Cloud Vault</h1>
+          <span className="text-[10px] font-semibold text-[#2AABEE] bg-[#2AABEE]/15 border border-[#2AABEE]/30 rounded px-1.5 py-0.5 self-start leading-none mt-0.5 tracking-wide uppercase">Beta</span>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -39,7 +47,7 @@ export function Sidebar() {
                 ? 'bg-[rgba(42,171,238,0.15)] text-[#2AABEE] hover:bg-[rgba(42,171,238,0.2)]'
                 : 'text-[#8B9CAF] hover:text-white hover:bg-[#242F3D]'
             }`}
-            onClick={() => setCurrentFolder('/')}
+            onClick={() => { setCurrentFolder('/'); closeSidebarOnMobile(); }}
           >
             <HardDrive className={`w-4 h-4 ${currentFolder === '/' ? 'text-[#2AABEE]' : ''}`} />
             My Files
@@ -47,10 +55,18 @@ export function Sidebar() {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-[#8B9CAF] hover:text-white hover:bg-[#242F3D]"
-            onClick={() => openRightPanel('settings')}
+            onClick={() => { openRightPanel('settings'); closeSidebarOnMobile(); }}
           >
             <Settings className="w-4 h-4" />
             Settings
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-[#8B9CAF] hover:text-[#2AABEE] hover:bg-[#2AABEE]/10"
+            onClick={() => { setIsFeedbackOpen(true); closeSidebarOnMobile(); }}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Feedback / Report Bug
           </Button>
         </div>
 
@@ -110,6 +126,8 @@ export function Sidebar() {
           </Button>
         </div>
       </div>
+
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );
 }

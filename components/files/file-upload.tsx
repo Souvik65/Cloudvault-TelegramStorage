@@ -95,7 +95,7 @@ export function FileUpload({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+          className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-all duration-200 ${
             isDragActive
               ? 'border-[#2AABEE] bg-[rgba(42,171,238,0.1)]'
               : 'border-[rgba(255,255,255,0.12)] bg-[#1C2733] hover:border-[rgba(255,255,255,0.2)] hover:bg-[#242F3D]'
