@@ -434,25 +434,27 @@ export function FileList() {
 
         {/* Selection action bar */}
         {selectedFiles.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0 ml-2">
-            <span className="text-sm text-[#6C7883]">{selectedFiles.length} selected</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-2">
+            <span className="text-xs sm:text-sm text-[#6C7883] shrink-0">
+              {selectedFiles.length}<span className="hidden sm:inline"> selected</span>
+            </span>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 text-[#E53935] hover:text-[#E53935] hover:bg-[#E53935]/10"
+              className="gap-1.5 px-2 sm:px-3 text-[#E53935] hover:text-[#E53935] hover:bg-[#E53935]/10"
               onClick={() => handleDelete(selectedFiles)}
             >
-              <Trash2 className="w-4 h-4" />
-              Delete
+              <Trash2 className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Delete</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 text-[#6C7883] hover:text-white hover:bg-white/5"
+              className="gap-1.5 px-2 sm:px-3 text-[#6C7883] hover:text-white hover:bg-white/5"
               onClick={clearSelection}
             >
-              <X className="w-4 h-4" />
-              Cancel
+              <X className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Cancel</span>
             </Button>
           </div>
         )}
@@ -494,7 +496,7 @@ export function FileList() {
                   <div className="p-3 bg-[#1C2733] rounded-xl">
                     {getIcon(file.mimeType, file.name)}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     {canPreview(file.mimeType) && (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); handlePreview(file); }}>
                         <Eye className="w-4 h-4" />
@@ -533,7 +535,7 @@ export function FileList() {
       {/* Preview dialog */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && closePreview()}>
         <DialogContent
-          className={`p-0 bg-black/95 border-none overflow-hidden flex flex-col h-[90vh] ${
+          className={`p-0 bg-black/95 border-none overflow-hidden flex flex-col h-[95dvh] sm:h-[90vh] ${
             previewType === 'docx' ? 'sm:max-w-3xl' : 'sm:max-w-5xl md:flex-row'
           }`}
         >
@@ -591,7 +593,7 @@ export function FileList() {
 
           {/* AI analysis sidebar — images only */}
           {previewType === 'image' && (isAnalyzing || analysisResult) && (
-            <div className="w-full md:w-80 lg:w-96 bg-[#0E1621] border-l border-[rgba(255,255,255,0.06)] p-6 flex flex-col h-full overflow-y-auto">
+            <div className="w-full md:w-80 lg:w-96 bg-[#0E1621] border-t md:border-t-0 md:border-l border-[rgba(255,255,255,0.06)] p-4 md:p-6 flex flex-col max-h-56 md:max-h-none md:h-full overflow-y-auto shrink-0">
               <div className="flex items-center gap-2 mb-6">
                 <Sparkles className="w-5 h-5 text-[#2AABEE]" />
                 <h3 className="text-white font-medium">AI Analysis</h3>
