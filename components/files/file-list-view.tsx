@@ -16,9 +16,17 @@ interface FileListViewProps {
   onPreview: (file: FileMetadata) => void;
 }
 
-function canPreview(mimeType: string): boolean {
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
+
+function isImageByExtension(name: string): boolean {
+  const ext = name?.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext ?? '');
+}
+
+function canPreview(mimeType: string, name?: string): boolean {
   return (
     mimeType?.startsWith('image/') ||
+    isImageByExtension(name ?? '') ||
     mimeType?.startsWith('video/') ||
     mimeType === 'application/pdf' ||
     mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -82,7 +90,7 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
             {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '\u2014'}
           </span>
           <div className="w-24 flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-            {canPreview(file.mimeType) && (
+            {canPreview(file.mimeType, file.name) && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); onPreview(file); }}>
                 <Eye className="w-4 h-4" />
               </Button>

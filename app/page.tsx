@@ -63,7 +63,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-[#17212B] overflow-hidden">
+    <div className="flex h-dvh bg-[#17212B] overflow-hidden">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -78,7 +78,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative h-screen md:h-full z-40 md:z-auto transition-transform duration-300`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative h-dvh md:h-full z-40 md:z-auto transition-transform duration-300`}>
         <Sidebar />
       </div>
 

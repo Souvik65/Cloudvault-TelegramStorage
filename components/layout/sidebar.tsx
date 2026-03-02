@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/store/use-auth-store';
-import { useFileStore } from '@/store/use-file-store';
+import { useFileStore, FileMetadata } from '@/store/use-file-store';
 import { useUIStore } from '@/store/use-ui-store';
 import { Button } from '@/components/ui/button';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
@@ -20,9 +20,15 @@ export function Sidebar() {
   const totalStorage = files.reduce((acc, file) => acc + (file.size || 0), 0);
   const totalStorageFormatted = formatSize(totalStorage);
 
-  const images = files.filter(f => f.mimeType?.startsWith('image/')).length;
-  const videos = files.filter(f => f.mimeType?.startsWith('video/')).length;
-  const documents = files.filter(f => !f.mimeType?.startsWith('image/') && !f.mimeType?.startsWith('video/') && f.hasDocument).length;
+  const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic', 'gif', 'bmp', 'tiff'];
+  const VIDEO_EXTS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'];
+  const getExt = (name: string) => name?.split('.').pop()?.toLowerCase() ?? '';
+  const isImageFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('image/') || IMAGE_EXTS.includes(getExt(f.name)));
+  const isVideoFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('video/') || VIDEO_EXTS.includes(getExt(f.name)));
+
+  const images = files.filter(isImageFile).length;
+  const videos = files.filter(isVideoFile).length;
+  const documents = files.filter(f => f.hasDocument && !isImageFile(f) && !isVideoFile(f)).length;
 
   return (
     <div className="bg-[#0E1621] w-64 flex flex-col h-full z-10 border-r border-[rgba(255,255,255,0.06)] shrink-0">
@@ -38,7 +44,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0">
         <div className="space-y-1">
           <Button
             variant={currentFolder === '/' ? 'secondary' : 'ghost'}

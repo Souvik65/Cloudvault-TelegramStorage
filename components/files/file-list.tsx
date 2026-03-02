@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { useFileStore } from '@/store/use-file-store';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useUIStore } from '@/store/use-ui-store';
-import { FileIcon, Folder, Download, Trash2, Image as ImageIcon, Video, FileText, ChevronRight, Home, FileArchive, FileAudio, FileCode, FileSpreadsheet, FileJson, Eye, Sparkles, Hash, ArrowLeft, X } from 'lucide-react';
+import { FileIcon, Folder, Download, Trash2, Image as ImageIcon, Video, FileText, ChevronRight, Home, FileArchive, FileAudio, FileCode, FileSpreadsheet, FileJson, Eye, Hash, ArrowLeft, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FileCardSkeleton, FileRowSkeleton } from '@/components/ui/skeleton';
@@ -13,7 +13,6 @@ import { FileListView } from '@/components/files/file-list-view';
 import { format } from 'date-fns';
 import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
-import { GoogleGenAI } from '@google/genai';
 
 // Special path for the virtual "Telegram direct uploads" folder
 const TELEGRAM_DIRECT_PATH = '/__tg_direct__';
@@ -21,9 +20,17 @@ const VIRTUAL_FOLDER_ID = -1;
 
 type PreviewType = 'image' | 'video' | 'pdf' | 'docx' | null;
 
-function canPreview(mimeType: string): boolean {
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
+
+function isImageByExtension(name: string): boolean {
+  const ext = name?.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext ?? '');
+}
+
+function canPreview(mimeType: string, name?: string): boolean {
   return (
     mimeType?.startsWith('image/') ||
+    isImageByExtension(name ?? '') ||
     mimeType?.startsWith('video/') ||
     mimeType === 'application/pdf' ||
     mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -40,8 +47,6 @@ export function FileList() {
   const [previewType, setPreviewType] = useState<PreviewType>(null);
   const [docxHtml, setDocxHtml] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const lastSelectedId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -60,11 +65,28 @@ export function FileList() {
     lastSelectedId.current = null;
   };
 
+  // Initialize browser history state so the back button has a baseline
+  useEffect(() => {
+    window.history.replaceState({ folder: currentFolder }, '');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle browser / mobile OS back button
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const folder = (e.state as { folder?: string })?.folder ?? '/';
+      setCurrentFolder(folder);
+      setSelectedFiles([]);
+      lastSelectedId.current = null;
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [setCurrentFolder]);
+
   const handlePreview = async (file: any) => {
-    if (!canPreview(file.mimeType)) return;
+    if (!canPreview(file.mimeType, file.name)) return;
 
     let type: PreviewType;
-    if (file.mimeType?.startsWith('image/')) type = 'image';
+    if (file.mimeType?.startsWith('image/') || isImageByExtension(file.name)) type = 'image';
     else if (file.mimeType?.startsWith('video/')) type = 'video';
     else if (file.mimeType === 'application/pdf') type = 'pdf';
     else type = 'docx';
@@ -72,7 +94,6 @@ export function FileList() {
     setPreviewFile(file);
     setPreviewType(type);
     setIsPreviewLoading(true);
-    setAnalysisResult(null);
     setDocxHtml(null);
 
     try {
@@ -113,48 +134,6 @@ export function FileList() {
     setPreviewFile(null);
     setPreviewType(null);
     setDocxHtml(null);
-    setAnalysisResult(null);
-  };
-
-  const analyzeImage = async () => {
-    if (!previewUrl || !previewFile) return;
-
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Gemini API key is not configured');
-
-      const response = await fetch(previewUrl);
-      const blob = await response.blob();
-
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      const ai = new GoogleGenAI({ apiKey });
-      const aiResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: {
-          parts: [
-            { inlineData: { mimeType: previewFile.mimeType || 'image/jpeg', data: base64Data } },
-            { text: 'Analyze this image and describe what you see in detail. If there is text, extract it. If there are objects, list them.' },
-          ],
-        },
-      });
-
-      setAnalysisResult(aiResponse.text || 'No analysis result returned.');
-    } catch (error: any) {
-      console.error('Analysis error:', error);
-      toast.error(error.message || 'Failed to analyze image');
-      setAnalysisResult('Analysis failed.');
-    } finally {
-      setIsAnalyzing(false);
-    }
   };
 
   useEffect(() => {
@@ -310,11 +289,11 @@ export function FileList() {
 
   const handleFileClick = (e: React.MouseEvent, file: any) => {
     if (!file.hasDocument && file.mimeType === 'folder') {
-      if (file.isVirtualChannelFolder) {
-        setCurrentFolder(TELEGRAM_DIRECT_PATH);
-      } else {
-        setCurrentFolder(currentFolder === '/' ? `/${file.name}` : `${currentFolder}/${file.name}`);
-      }
+      const newPath = file.isVirtualChannelFolder
+        ? TELEGRAM_DIRECT_PATH
+        : (currentFolder === '/' ? `/${file.name}` : `${currentFolder}/${file.name}`);
+      window.history.pushState({ folder: newPath }, '');
+      setCurrentFolder(newPath);
       clearSelection();
     } else {
       toggleSelection(file.id, e.shiftKey);
@@ -497,7 +476,7 @@ export function FileList() {
                     {getIcon(file.mimeType, file.name)}
                   </div>
                   <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    {canPreview(file.mimeType) && (
+                    {canPreview(file.mimeType, file.name) && (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6C7883] hover:text-[#2AABEE]" onClick={(e) => { e.stopPropagation(); handlePreview(file); }}>
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -535,8 +514,8 @@ export function FileList() {
       {/* Preview dialog */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && closePreview()}>
         <DialogContent
-          className={`p-0 bg-black/95 border-none overflow-hidden flex flex-col h-[95dvh] sm:h-[90vh] ${
-            previewType === 'docx' ? 'sm:max-w-3xl' : 'sm:max-w-5xl md:flex-row'
+          className={`p-0 bg-black/95 border-none overflow-hidden flex flex-col w-full h-[95dvh] sm:h-[90vh] ${
+            previewType === 'docx' ? 'sm:max-w-3xl' : 'sm:max-w-5xl'
           }`}
         >
           <DialogHeader className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
@@ -579,35 +558,7 @@ export function FileList() {
             ) : !isPreviewLoading ? (
               <div className="text-white/70">Failed to load preview</div>
             ) : null}
-
-            {/* Gemini analyze button — images only */}
-            {previewType === 'image' && previewUrl && !isPreviewLoading && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-                <Button onClick={analyzeImage} disabled={isAnalyzing} className="shadow-xl rounded-full px-6 gap-2">
-                  <Sparkles className={`w-4 h-4 ${isAnalyzing ? 'animate-pulse' : ''}`} />
-                  {isAnalyzing ? 'Analyzing Image...' : 'Analyze with Gemini'}
-                </Button>
-              </div>
-            )}
           </div>
-
-          {/* AI analysis sidebar — images only */}
-          {previewType === 'image' && (isAnalyzing || analysisResult) && (
-            <div className="w-full md:w-80 lg:w-96 bg-[#0E1621] border-t md:border-t-0 md:border-l border-[rgba(255,255,255,0.06)] p-4 md:p-6 flex flex-col max-h-56 md:max-h-none md:h-full overflow-y-auto shrink-0">
-              <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="w-5 h-5 text-[#2AABEE]" />
-                <h3 className="text-white font-medium">AI Analysis</h3>
-              </div>
-              {isAnalyzing ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-[#6C7883] gap-4">
-                  <div className="w-8 h-8 border-2 border-[#2AABEE] border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-center">Gemini is analyzing your image...</p>
-                </div>
-              ) : analysisResult ? (
-                <div className="text-[#8B9CAF] whitespace-pre-wrap leading-relaxed text-sm">{analysisResult}</div>
-              ) : null}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>

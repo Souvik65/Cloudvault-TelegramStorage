@@ -84,11 +84,11 @@ export function Header() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 hidden sm:flex"
+          className="gap-2"
           onClick={() => setIsNewFolderOpen(true)}
         >
           <FolderPlus className="w-4 h-4" />
-          New Folder
+          <span className="hidden sm:inline">New Folder</span>
         </Button>
 
         <Button
