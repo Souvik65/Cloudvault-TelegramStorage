@@ -10,14 +10,14 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    let channelId: string | number | any = searchParams.get('channelId');
+    let channelId: string | number = searchParams.get('channelId') ?? 'me';
 
     if (!channelId || channelId === 'undefined' || channelId === 'null') {
       channelId = 'me';
     }
 
     if (channelId !== 'me' && !isNaN(Number(channelId))) {
-      if (!channelId.startsWith('-100')) {
+      if (!String(channelId).startsWith('-100')) {
         channelId = '-100' + channelId;
       }
     }
@@ -84,7 +84,7 @@ export async function GET(req: Request) {
           ...extraMeta,
           hasDocument: true,
           isDirectUpload,
-          size: msg.document.size.toJSNumber(),
+          size: Number(msg.document.size),
           mimeType: msg.document.mimeType,
         });
       } else if (msg.message) {
@@ -124,14 +124,14 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
-    let channelId: string | number | any = formData.get('channelId') as string;
+    let channelId: string | number = formData.get('channelId') as string;
 
     if (!channelId || channelId === 'undefined' || channelId === 'null') {
       channelId = 'me';
     }
 
     if (channelId !== 'me' && !isNaN(Number(channelId))) {
-      if (!channelId.startsWith('-100')) {
+      if (!String(channelId).startsWith('-100')) {
         channelId = '-100' + channelId;
       }
     }
@@ -188,14 +188,14 @@ export async function DELETE(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    let channelId: string | number | any = searchParams.get('channelId');
+    let channelId: string | number = searchParams.get('channelId') ?? 'me';
 
     if (!channelId || channelId === 'undefined' || channelId === 'null') {
       channelId = 'me';
     }
 
     if (channelId !== 'me' && !isNaN(Number(channelId))) {
-      if (!channelId.startsWith('-100')) {
+      if (!String(channelId).startsWith('-100')) {
         channelId = '-100' + channelId;
       }
       try {
@@ -211,7 +211,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Missing messageIds' }, { status: 400 });
     }
 
-    const messageIds = messageIdsStr.split(',').map(Number);
+    const messageIds = messageIdsStr.split(',').map(Number).filter(id => !isNaN(id) && id > 0);
     const client = await getClient(sessionString);
 
     await client.deleteMessages(channelId, messageIds, { revoke: true });

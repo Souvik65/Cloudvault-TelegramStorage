@@ -444,7 +444,7 @@ function LoadingDots() {
 
 // ─── Main Login Form ───────────────────────────────────────────────────────────
 
-export function LoginForm() {
+export function LoginForm({ embedded = false }: { embedded?: boolean }) {
   const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [localNumber, setLocalNumber] = useState('');
   const [phoneCode, setPhoneCode] = useState('');
@@ -457,6 +457,7 @@ export function LoginForm() {
   const [direction, setDirection] = useState(1);
 
   const { setSession, setUser } = useAuthStore();
+  const hasAutoSubmittedRef = useRef(false);
 
   // Combine country code + local number into full international format
   const phoneNumber = `+${selectedCountry.dialCode}${localNumber.replace(/\D/g, '')}`;
@@ -538,11 +539,20 @@ export function LoginForm() {
 
   // Auto-submit when OTP is fully filled
   useEffect(() => {
-    if (step === 'code' && phoneCode.length === 5 && !loading) {
+    if (step !== 'code') {
+      hasAutoSubmittedRef.current = false;
+      return;
+    }
+    if (phoneCode.length < 5) {
+      hasAutoSubmittedRef.current = false;
+      return;
+    }
+    if (phoneCode.length === 5 && !loading && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
       handleSignIn();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phoneCode, step]);
+  }, [phoneCode, step, loading]);
 
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
@@ -552,7 +562,7 @@ export function LoginForm() {
 
   return (
     <>
-      <AnimatedBackground />
+      {!embedded && <AnimatedBackground />}
 
       <motion.div
         className="w-full max-w-[440px] mx-auto"
@@ -638,7 +648,7 @@ export function LoginForm() {
                         placeholder="Phone number"
                         value={localNumber}
                         onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
-                        autoFocus
+                        autoFocus={!embedded}
                         required
                         className="flex-1 h-12 px-3 rounded-r-xl border-2 border-[rgba(255,255,255,0.08)]
                           bg-[#1C2733] text-white placeholder:text-[#4A5568] text-sm
@@ -779,7 +789,7 @@ export function LoginForm() {
                         placeholder="Your 2FA password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        autoFocus
+                        autoFocus={!embedded}
                         required
                         className="w-full h-12 px-3 pr-11 rounded-xl border-2 border-[rgba(255,255,255,0.08)]
                           bg-[#1C2733] text-white placeholder:text-[#4A5568] text-sm

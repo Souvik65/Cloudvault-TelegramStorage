@@ -85,7 +85,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Feedback & Bug Report</DialogTitle>
-          <DialogDescription className="text-[#6C7883]">
+          <DialogDescription className="text-[#A0ADB9]">
             Help us improve CloudVault by sharing your feedback or reporting a bug.
           </DialogDescription>
         </DialogHeader>
@@ -101,7 +101,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
                   type === 'feedback'
                     ? 'border-[#2AABEE] bg-[#2AABEE]/15 text-[#2AABEE]'
-                    : 'border-[rgba(255,255,255,0.1)] bg-[#1C2733] text-[#6C7883] hover:text-white hover:border-[rgba(255,255,255,0.2)]'
+                    : 'border-[rgba(255,255,255,0.14)] bg-[#1C2733] text-[#8B9CAF] hover:text-white hover:border-[rgba(255,255,255,0.25)]'
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
@@ -113,7 +113,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
                   type === 'bug'
                     ? 'border-[#EF5350] bg-[#EF5350]/15 text-[#EF5350]'
-                    : 'border-[rgba(255,255,255,0.1)] bg-[#1C2733] text-[#6C7883] hover:text-white hover:border-[rgba(255,255,255,0.2)]'
+                    : 'border-[rgba(255,255,255,0.14)] bg-[#1C2733] text-[#8B9CAF] hover:text-white hover:border-[rgba(255,255,255,0.25)]'
                 }`}
               >
                 <Bug className="w-4 h-4" />
@@ -148,7 +148,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
-              className="flex w-full rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1C2733] px-3 py-2 text-sm text-white placeholder:text-[#6C7883] focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:ring-offset-0 focus:border-transparent resize-none"
+              className="flex w-full rounded-lg border border-[rgba(255,255,255,0.14)] bg-[#1C2733] px-3 py-2 text-sm text-white placeholder:text-[#5A6878] focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:ring-offset-0 focus:border-transparent resize-none min-h-[80px]"
             />
             <p className="text-xs text-[#6C7883] text-right">{description.length}/1000</p>
           </div>

@@ -13,32 +13,36 @@ export async function POST(req: Request) {
     }
 
     const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 5, useWSS: true });
-    await client.connect();
-
     try {
-      if (password) {
-        await client.signInWithPassword(
-          { apiId, apiHash },
-          { password: async () => password, onError: (err) => { throw err; } }
-        );
-      } else {
-        await client.invoke(
-          new Api.auth.SignIn({
-            phoneNumber,
-            phoneCodeHash,
-            phoneCode,
-          })
-        );
-      }
-    } catch (error: any) {
-      if (error.errorMessage === 'SESSION_PASSWORD_NEEDED') {
-        return NextResponse.json({ requiresPassword: true });
-      }
-      throw error;
-    }
+      await client.connect();
 
-    const newSessionString = client.session.save() as unknown as string;
-    return NextResponse.json({ sessionString: newSessionString });
+      try {
+        if (password) {
+          await client.signInWithPassword(
+            { apiId, apiHash },
+            { password: async () => password, onError: (err) => { throw err; } }
+          );
+        } else {
+          await client.invoke(
+            new Api.auth.SignIn({
+              phoneNumber,
+              phoneCodeHash,
+              phoneCode,
+            })
+          );
+        }
+      } catch (error: any) {
+        if (error.errorMessage === 'SESSION_PASSWORD_NEEDED') {
+          return NextResponse.json({ requiresPassword: true });
+        }
+        throw error;
+      }
+
+      const newSessionString = client.session.save() as unknown as string;
+      return NextResponse.json({ sessionString: newSessionString });
+    } finally {
+      try { await client.disconnect(); } catch {}
+    }
   } catch (error: any) {
     console.error('Sign in error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

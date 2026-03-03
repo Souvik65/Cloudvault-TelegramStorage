@@ -14,6 +14,7 @@ interface FileListViewProps {
   onDownload: (file: FileMetadata) => void;
   onDelete: (ids: number[]) => void;
   onPreview: (file: FileMetadata) => void;
+  showPath?: boolean;
 }
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
@@ -48,9 +49,9 @@ function getIcon(mimeType: string, name: string) {
   return <FileIcon className="w-5 h-5 text-[#6C7883]" />;
 }
 
-export function FileListView({ files, selectedFiles, onFileClick, onDownload, onDelete, onPreview }: FileListViewProps) {
+export function FileListView({ files, selectedFiles, onFileClick, onDownload, onDelete, onPreview, showPath }: FileListViewProps) {
   return (
-    <div className="border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+    <div className="border border-[rgba(255,255,255,0.10)] rounded-xl overflow-hidden">
       {/* Header row */}
       <div className="flex items-center gap-4 px-4 py-2.5 bg-[#1C2733] text-xs text-[#6C7883] uppercase tracking-wider font-medium">
         <span className="w-10" />
@@ -67,7 +68,7 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.02, duration: 0.2 }}
-          className={`group flex items-center gap-4 px-4 py-3 border-b border-[rgba(255,255,255,0.03)] cursor-pointer transition-colors ${
+          className={`group flex items-center gap-4 px-4 py-3 border-b border-[rgba(255,255,255,0.06)] cursor-pointer transition-colors ${
             selectedFiles.includes(file.id)
               ? 'bg-[rgba(42,171,238,0.15)]'
               : 'hover:bg-[#242F3D]'
@@ -79,6 +80,12 @@ export function FileListView({ files, selectedFiles, onFileClick, onDownload, on
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-white truncate">{file.name}</p>
+            {showPath && file.folderPath && file.folderPath !== '/' && (
+              <span className="text-[10px] text-[#4FC3F7] flex items-center gap-0.5 mt-0.5">
+                <Folder className="w-2.5 h-2.5 shrink-0" />
+                {file.folderPath}
+              </span>
+            )}
             <p className="text-xs text-[#6C7883] sm:hidden">
               {file.hasDocument ? formatSize(file.size) : 'Folder'}
             </p>

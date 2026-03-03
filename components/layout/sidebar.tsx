@@ -31,9 +31,9 @@ export function Sidebar() {
   const documents = files.filter(f => f.hasDocument && !isImageFile(f) && !isVideoFile(f)).length;
 
   return (
-    <div className="bg-[#0E1621] w-64 flex flex-col h-full z-10 border-r border-[rgba(255,255,255,0.06)] shrink-0">
+    <div className="bg-[#0E1621] w-64 flex flex-col h-full z-10 border-r border-[rgba(255,255,255,0.10)] shrink-0">
       {/* Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="p-6 flex items-center gap-3 border-b border-[rgba(255,255,255,0.10)]">
         <div className="w-10 h-10 bg-[#2AABEE] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#2AABEE]/20">
           <Cloud className="w-6 h-6" />
         </div>
@@ -116,7 +116,7 @@ export function Sidebar() {
       </div>
 
       {/* User profile */}
-      <div className="p-4 border-t border-[rgba(255,255,255,0.06)] bg-[#0B1018]">
+      <div className="p-4 border-t border-[rgba(255,255,255,0.10)] bg-[#0B1018]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-8 h-8 rounded-full bg-[#2AABEE] flex items-center justify-center text-white font-bold text-sm shrink-0">

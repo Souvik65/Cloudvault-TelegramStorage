@@ -10,10 +10,10 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    let channelId: string | number | any = searchParams.get('channelId') || 'me';
+    let channelId: string | number = searchParams.get('channelId') || 'me';
 
     if (channelId !== 'me' && !isNaN(Number(channelId))) {
-      if (!channelId.startsWith('-100')) {
+      if (!String(channelId).startsWith('-100')) {
         channelId = '-100' + channelId;
       }
     }
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       }
     }
 
-    const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as any);
+    const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as Uint8Array);
     const safeFilename = filename.replace(/[^\w.\-]/g, '_');
     const encodedFilename = encodeURIComponent(filename);
 
