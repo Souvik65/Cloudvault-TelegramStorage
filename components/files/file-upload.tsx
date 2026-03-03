@@ -112,7 +112,7 @@ export function FileUpload({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         {filesToUpload.length > 0 && (
           <div className="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2">
             {filesToUpload.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-[#1C2733] rounded-lg border border-[rgba(255,255,255,0.06)]">
+              <div key={index} className="flex items-center justify-between p-3 bg-[#1C2733] rounded-lg border border-[rgba(255,255,255,0.10)]">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <FileIcon className="w-4 h-4 text-[#6C7883] shrink-0" />
                   <span className="text-sm text-[#8B9CAF] truncate">{file.name}</span>

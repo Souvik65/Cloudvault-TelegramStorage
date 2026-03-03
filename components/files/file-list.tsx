@@ -20,6 +20,18 @@ const VIRTUAL_FOLDER_ID = -1;
 
 type PreviewType = 'image' | 'video' | 'pdf' | 'docx' | null;
 
+function sanitizeHtml(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('script,iframe,style,link,object,embed,form,base').forEach(el => el.remove());
+  div.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+    });
+  });
+  return div.innerHTML;
+}
+
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
 
 function isImageByExtension(name: string): boolean {
@@ -48,6 +60,7 @@ export function FileList() {
   const [docxHtml, setDocxHtml] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const lastSelectedId = useRef<number | null>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     return () => {
@@ -96,6 +109,10 @@ export function FileList() {
     setIsPreviewLoading(true);
     setDocxHtml(null);
 
+    previewAbortRef.current?.abort();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
+
     try {
       if (previewUrl) {
         window.URL.revokeObjectURL(previewUrl);
@@ -104,6 +121,7 @@ export function FileList() {
 
       const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
         headers: { 'x-tg-session': sessionString! },
+        signal: controller.signal,
       });
 
       if (!res.ok) throw new Error('Failed to load preview');
@@ -114,21 +132,25 @@ export function FileList() {
         const arrayBuffer = await blob.arrayBuffer();
         const mammoth = await import('mammoth');
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        setDocxHtml(result.value);
+        setDocxHtml(sanitizeHtml(result.value));
       } else {
         const url = window.URL.createObjectURL(blob);
         setPreviewUrl(url);
       }
     } catch (error: any) {
-      toast.error(error.message);
-      setPreviewFile(null);
-      setPreviewType(null);
+      if (error.name !== 'AbortError') {
+        toast.error(error.message);
+        setPreviewFile(null);
+        setPreviewType(null);
+      }
     } finally {
       setIsPreviewLoading(false);
     }
   };
 
   const closePreview = () => {
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
     if (previewUrl) window.URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewFile(null);
@@ -161,6 +183,13 @@ export function FileList() {
 
   // Build the file list for the current folder, injecting a virtual channel folder at root
   const filteredFiles = useMemo(() => {
+    // Global search: bypass folder structure, search entire channel
+    if (searchQuery) {
+      return files.filter(
+        f => f.hasDocument && f.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     let result: any[];
 
     if (currentFolder === TELEGRAM_DIRECT_PATH) {
@@ -193,8 +222,7 @@ export function FileList() {
       }
     }
 
-    if (!searchQuery) return result;
-    return result.filter(f => f.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+    return result;
   }, [files, currentFolder, searchQuery, storageChannelName]);
 
   const handleDelete = async (ids: number[]) => {
@@ -344,7 +372,7 @@ export function FileList() {
             {Array.from({ length: 8 }).map((_, i) => <FileCardSkeleton key={i} />)}
           </div>
         ) : (
-          <div className="border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+          <div className="border border-[rgba(255,255,255,0.10)] rounded-xl overflow-hidden">
             {Array.from({ length: 6 }).map((_, i) => <FileRowSkeleton key={i} />)}
           </div>
         )}
@@ -442,7 +470,7 @@ export function FileList() {
       {/* File area — clicking background deselects */}
       <div onClick={handleAreaClick}>
         {filteredFiles.length === 0 ? (
-          <div className="bg-[#242F3D] text-center py-20 rounded-2xl border border-[rgba(255,255,255,0.06)] border-dashed">
+          <div className="bg-[#242F3D] text-center py-20 rounded-2xl border border-[rgba(255,255,255,0.10)] border-dashed">
             <Folder className="w-12 h-12 text-[#2AABEE] mx-auto mb-4" />
             <h3 className="text-lg font-bold text-white mb-1">No files here</h3>
             <p className="text-[#6C7883] text-sm">Upload some files or create a new folder.</p>
@@ -455,6 +483,7 @@ export function FileList() {
             onDownload={handleDownload}
             onDelete={handleDelete}
             onPreview={handlePreview}
+            showPath={!!searchQuery}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -466,7 +495,7 @@ export function FileList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.25 }}
                 className={`group relative bg-[#242F3D] p-5 rounded-xl border transition-all duration-200 cursor-pointer hover:bg-[#2B3A4D] ${
-                  selectedFiles.includes(file.id) ? 'border-[#2AABEE] ring-1 ring-[#2AABEE]/30' : 'border-[rgba(255,255,255,0.06)]'
+                  selectedFiles.includes(file.id) ? 'border-[#2AABEE] ring-1 ring-[#2AABEE]/30' : 'border-[rgba(255,255,255,0.10)]'
                 }`}
                 onClick={(e) => handleFileClick(e, file)}
                 onDoubleClick={() => handleFileDoubleClick(file)}
@@ -495,6 +524,12 @@ export function FileList() {
                 </div>
 
                 <h4 className="font-medium text-white truncate mb-1" title={file.name}>{file.name}</h4>
+                {searchQuery && file.folderPath && file.folderPath !== '/' && (
+                  <p className="text-[10px] text-[#4FC3F7] truncate mb-1 flex items-center gap-0.5">
+                    <Folder className="w-2.5 h-2.5 shrink-0" />
+                    {file.folderPath}
+                  </p>
+                )}
                 <div className="flex items-center justify-between text-xs text-[#6C7883]">
                   <span>
                     {file.isVirtualChannelFolder

@@ -92,7 +92,7 @@ export function FileDetailsPanel() {
       </div>
 
       {/* Details */}
-      <div className="space-y-3 border-t border-[rgba(255,255,255,0.06)] pt-4">
+      <div className="space-y-3 border-t border-[rgba(255,255,255,0.10)] pt-4">
         <div className="flex justify-between text-sm">
           <span className="text-[#6C7883]">Size</span>
           <span className="text-[#8B9CAF]">{file.hasDocument ? formatSize(file.size) : '\u2014'}</span>
@@ -108,7 +108,7 @@ export function FileDetailsPanel() {
       </div>
 
       {/* Actions */}
-      <div className="space-y-2 border-t border-[rgba(255,255,255,0.06)] pt-4">
+      <div className="space-y-2 border-t border-[rgba(255,255,255,0.10)] pt-4">
         {file.hasDocument && (
           <Button variant="secondary" className="w-full justify-start gap-3" onClick={handleDownload}>
             <Download className="w-4 h-4" />

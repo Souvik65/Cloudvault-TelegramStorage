@@ -40,7 +40,7 @@ export function Header() {
   };
 
   return (
-    <header className="bg-[#1C2733] h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 border-b border-[rgba(255,255,255,0.06)]">
+    <header className="bg-[#1C2733] h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 border-b border-[rgba(255,255,255,0.10)]">
       {/* Mobile menu toggle */}
       <Button
         variant="ghost"
@@ -54,7 +54,7 @@ export function Header() {
       {/* Search */}
       <div className="flex-1 max-w-xl">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6C7883]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B9CAF]" />
           <Input
             type="text"
             placeholder="Search files and folders..."
@@ -69,7 +69,7 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-3 ml-4">
         <ViewToggle />
 
-        <div className="w-px h-5 bg-[rgba(255,255,255,0.06)] hidden sm:block" />
+        <div className="w-px h-5 bg-[rgba(255,255,255,0.12)] hidden sm:block" />
 
         <Button
           variant="ghost"

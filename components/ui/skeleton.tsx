@@ -14,7 +14,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 
 export function FileCardSkeleton() {
   return (
-    <div className="bg-[#242F3D] rounded-xl p-5 border border-[rgba(255,255,255,0.06)]">
+    <div className="bg-[#242F3D] rounded-xl p-5 border border-[rgba(255,255,255,0.10)]">
       <div className="flex items-start justify-between mb-4">
         <Skeleton className="w-14 h-14 rounded-xl" />
         <Skeleton className="w-8 h-8 rounded-md" />

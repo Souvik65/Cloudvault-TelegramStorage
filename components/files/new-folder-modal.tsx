@@ -17,6 +17,12 @@ export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) return;
 
+    const INVALID_CHARS = /[/\\:*?"<>|]/;
+    if (INVALID_CHARS.test(folderName.trim())) {
+      toast.error('Folder name cannot contain: / \\ : * ? " < > |');
+      return;
+    }
+
     // Check for duplicate folder names
     const isDuplicate = files.some(
       (f) => f.folderPath === currentFolder && !f.hasDocument && f.name === folderName

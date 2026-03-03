@@ -31,15 +31,15 @@ export function RightPanel({ isOpen, onClose, title, children }: RightPanelProps
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className="fixed right-0 top-0 h-full w-full z-40 md:relative md:w-80 md:z-20 bg-[#0E1621] border-l border-[rgba(255,255,255,0.06)] flex flex-col shrink-0"
+            className="fixed right-0 top-0 h-full w-full z-40 md:relative md:w-80 md:z-20 bg-[#0E1621] border-l border-[rgba(255,255,255,0.10)] flex flex-col shrink-0"
           >
-            <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.06)] shrink-0">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.10)] shrink-0">
               <h2 className="text-sm font-semibold text-white">{title}</h2>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="h-10 w-10 text-[#6C7883] hover:text-white"
+                className="h-10 w-10 text-[#8B9CAF] hover:text-white"
               >
                 <X className="w-5 h-5" />
               </Button>

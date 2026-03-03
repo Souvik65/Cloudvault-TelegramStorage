@@ -81,8 +81,8 @@ export function SettingsPanel() {
       if (!data.error) {
         setFiles(data.files);
       }
-    } catch (error) {
-      console.error('Failed to refresh files:', error);
+    } catch {
+      toast.error('Failed to refresh files');
     }
   };
 
@@ -98,7 +98,7 @@ export function SettingsPanel() {
             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
               storageChannelId === 'me'
                 ? 'border-[#2AABEE] bg-[rgba(42,171,238,0.1)]'
-                : 'border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[#1C2733]'
+                : 'border-[rgba(255,255,255,0.10)] hover:border-[rgba(255,255,255,0.22)] hover:bg-[#1C2733]'
             }`}
             onClick={() => handleSelectChannel('me', 'Saved Messages')}
           >
@@ -118,7 +118,7 @@ export function SettingsPanel() {
                 className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                   storageChannelId === channel.id.toString()
                     ? 'border-[#2AABEE] bg-[rgba(42,171,238,0.1)]'
-                    : 'border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[#1C2733]'
+                    : 'border-[rgba(255,255,255,0.10)] hover:border-[rgba(255,255,255,0.22)] hover:bg-[#1C2733]'
                 }`}
                 onClick={() => handleSelectChannel(channel.id.toString(), channel.title)}
               >
@@ -136,7 +136,7 @@ export function SettingsPanel() {
       </div>
 
       {/* Create new channel */}
-      <div className="pt-4 border-t border-[rgba(255,255,255,0.06)] space-y-3">
+      <div className="pt-4 border-t border-[rgba(255,255,255,0.10)] space-y-3">
         <h3 className="text-xs font-semibold text-[#6C7883] uppercase tracking-wider">Create Channel</h3>
         <div className="flex gap-2">
           <Input

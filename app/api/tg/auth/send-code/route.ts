@@ -23,16 +23,20 @@ export async function POST(req: Request) {
     }
 
     const client = new TelegramClient(new StringSession(''), apiId, apiHash, { connectionRetries: 5, useWSS: true });
-    await client.connect();
+    try {
+      await client.connect();
 
-    const result = await client.sendCode(
-      { apiId, apiHash },
-      phoneNumber
-    );
+      const result = await client.sendCode(
+        { apiId, apiHash },
+        phoneNumber
+      );
 
-    const sessionString = client.session.save() as unknown as string;
+      const sessionString = client.session.save() as unknown as string;
 
-    return NextResponse.json({ phoneCodeHash: result.phoneCodeHash, sessionString });
+      return NextResponse.json({ phoneCodeHash: result.phoneCodeHash, sessionString });
+    } finally {
+      try { await client.disconnect(); } catch {}
+    }
   } catch (error: any) {
     console.error('Send code error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

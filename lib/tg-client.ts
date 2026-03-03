@@ -43,7 +43,7 @@ export async function getClient(sessionString: string) {
     clients.set(sessionString, client);
   }
 
-  if (!client.connected || client.disconnected) {
+  if (!client.connected) {
     if (!connecting.has(sessionString)) {
       const connectPromise = client.connect()
         .then(() => {})
