@@ -20,7 +20,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!sessionString || user) return;
-    const controller = new AbortController();
+    const controller = new AbortController(); 
     fetch('/api/tg/user', {
       headers: { 'x-tg-session': sessionString },
       signal: controller.signal,
