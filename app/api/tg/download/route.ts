@@ -51,11 +51,11 @@ export async function GET(req: Request) {
       }
     }
 
-    const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as Uint8Array);
+    const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as unknown as Uint8Array);
     const safeFilename = filename.replace(/[^\w.\-]/g, '_');
     const encodedFilename = encodeURIComponent(filename);
 
-    return new NextResponse(bufferData, {
+    return new NextResponse(new Uint8Array(bufferData), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,

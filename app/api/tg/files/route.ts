@@ -198,11 +198,6 @@ export async function DELETE(req: Request) {
       if (!String(channelId).startsWith('-100')) {
         channelId = '-100' + channelId;
       }
-      try {
-        channelId = BigInt(channelId);
-      } catch (e) {
-        return NextResponse.json({ error: 'Invalid channel ID' }, { status: 400 });
-      }
     }
 
     const messageIdsStr = searchParams.get('messageIds');
