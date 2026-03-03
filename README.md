@@ -10,7 +10,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-5-brown?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-[Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Configuration](#-configuration) · [Screenshots](#-screenshots)
+
 
 </div>
 
