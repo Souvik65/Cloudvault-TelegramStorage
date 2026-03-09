@@ -10,8 +10,8 @@ import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
 
 function getLargeIcon(mimeType: string, name: string) {
-  if (!mimeType || mimeType === 'folder') return <Folder className="w-12 h-12 text-[#2AABEE]" />;
-  if (mimeType.startsWith('image/')) return <ImageIcon className="w-12 h-12 text-[#4FC3F7]" />;
+  if (!mimeType || mimeType === 'folder') return <Folder className="w-12 h-12 text-[#DBDBDB]" />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-12 h-12 text-[#DBDBDB]" />;
   if (mimeType.startsWith('video/')) return <Video className="w-12 h-12 text-[#AB47BC]" />;
   if (mimeType.startsWith('audio/')) return <FileAudio className="w-12 h-12 text-[#FFB74D]" />;
   if (mimeType === 'application/pdf') return <FileText className="w-12 h-12 text-[#EF5350]" />;
@@ -80,7 +80,7 @@ export function FileDetailsPanel() {
     <div className="space-y-6">
       {/* File icon */}
       <div className="flex justify-center py-4">
-        <div className="w-20 h-20 rounded-2xl bg-[#1C2733] flex items-center justify-center">
+        <div className="w-20 h-20 rounded-2xl bg-[#808080] flex items-center justify-center">
           {getLargeIcon(file.mimeType, file.name)}
         </div>
       </div>
@@ -95,15 +95,15 @@ export function FileDetailsPanel() {
       <div className="space-y-3 border-t border-[rgba(255,255,255,0.10)] pt-4">
         <div className="flex justify-between text-sm">
           <span className="text-[#6C7883]">Size</span>
-          <span className="text-[#8B9CAF]">{file.hasDocument ? formatSize(file.size) : '\u2014'}</span>
+          <span className="text-[#DBDBDB]/60">{file.hasDocument ? formatSize(file.size) : '\u2014'}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#6C7883]">Uploaded</span>
-          <span className="text-[#8B9CAF]">{file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy HH:mm') : '\u2014'}</span>
+          <span className="text-[#DBDBDB]/60">{file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy HH:mm') : '\u2014'}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#6C7883]">Location</span>
-          <span className="text-[#8B9CAF] truncate ml-4">{file.folderPath || '/'}</span>
+          <span className="text-[#DBDBDB]/60 truncate ml-4">{file.folderPath || '/'}</span>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export function FileDetailsPanel() {
             Download
           </Button>
         )}
-        <Button variant="ghost" className="w-full justify-start gap-3 text-[#E53935] hover:text-[#E53935] hover:bg-[#E53935]/10" onClick={handleDelete}>
+        <Button variant="ghost" className="w-full justify-start gap-3 text-[#ff6a3d] hover:text-[#ff6a3d] hover:bg-[#ff6a3d]/10" onClick={handleDelete}>
           <Trash2 className="w-4 h-4" />
           Delete
         </Button>

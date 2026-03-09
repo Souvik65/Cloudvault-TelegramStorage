@@ -7,6 +7,7 @@ export interface TelegramUser {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  profilePhoto?: string;
 }
 
 interface AuthState {

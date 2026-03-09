@@ -34,13 +34,17 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-[rgba(255,255,255,0.12)] bg-[#242F3D] p-4 sm:p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-4 sm:p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl border",
         className
       )}
+      style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text-primary)' } as React.CSSProperties}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-3 top-3 h-8 w-8 flex items-center justify-center rounded-lg text-[#8B9CAF] opacity-70 transition-opacity hover:text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:ring-offset-2 focus:ring-offset-[#242F3D] disabled:pointer-events-none">
+      <DialogPrimitive.Close
+        style={{ color: 'var(--text-muted)' }}
+        className="absolute right-3 top-3 h-8 w-8 flex items-center justify-center rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#DBDBDB] disabled:pointer-events-none"
+      >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -98,7 +102,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-[#8B9CAF]", className)}
+    className={cn("text-sm text-[#DBDBDB]/60", className)}
     {...props}
   />
 ))

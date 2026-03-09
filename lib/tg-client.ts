@@ -38,8 +38,9 @@ export async function getClient(sessionString: string) {
       new StringSession(sessionString),
       apiId,
       apiHash,
-      { connectionRetries: 5, useWSS: true }
+      { connectionRetries: 5, requestRetries: 3 }
     );
+    client.setLogLevel("none" as any);
     clients.set(sessionString, client);
   }
 

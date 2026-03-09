@@ -64,6 +64,9 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error('Download file error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

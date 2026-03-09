@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { toast } from 'sonner';
 import {
-  Cloud, Phone, KeyRound, Lock, ChevronDown,
+  Phone, KeyRound, Lock, ChevronDown,
   Search, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, Shield,
 } from 'lucide-react';
 
@@ -175,13 +175,17 @@ function OTPInput({ value, onChange }: { value: string; onChange: (v: string) =>
             onFocus={(e) => e.target.select()}
             className={`
               w-11 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl border-2 outline-none
-              bg-[#1C2733] text-white caret-[#2AABEE]
-              transition-all duration-200
+              caret-[#DBDBDB] transition-all duration-200
               ${chars[i]
-                ? 'border-[#2AABEE] bg-[#1a2e3f] shadow-[0_0_12px_rgba(42,171,238,0.25)]'
-                : 'border-[rgba(255,255,255,0.08)] focus:border-[#2AABEE] focus:shadow-[0_0_12px_rgba(42,171,238,0.15)]'
+                ? 'border-[#DBDBDB] shadow-[0_0_12px_rgba(219,219,219,0.2)]'
+                : 'focus:border-[#DBDBDB] focus:shadow-[0_0_12px_rgba(219,219,219,0.12)]'
               }
             `}
+            style={{
+              background: chars[i] ? 'var(--bg-card)' : 'var(--bg-input)',
+              borderColor: chars[i] ? '#DBDBDB' : 'var(--border)',
+              color: 'var(--text-primary)',
+            }}
           />
         </motion.div>
       ))}
@@ -233,12 +237,17 @@ function CountryDropdown({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 h-12 px-3 rounded-l-xl border-2 border-r-0 border-[rgba(255,255,255,0.08)]
-          bg-[#1C2733] hover:bg-[#212e3d] hover:border-[rgba(42,171,238,0.4)]
-          text-white transition-all duration-200 focus:outline-none focus:border-[#2AABEE] min-w-[90px]"
+        className="flex items-center gap-2 h-12 px-3 rounded-l-xl border-2 border-r-0
+          text-[var(--text-primary)] transition-all duration-200 focus:outline-none min-w-[90px]"
+        style={{
+          background: 'var(--bg-input)',
+          borderColor: 'var(--border)',
+        }}
+        onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+        onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
       >
         <span className="text-xl leading-none">{selected.flag}</span>
-        <span className="text-sm font-medium text-[#8B9CAF]">+{selected.dialCode}</span>
+        <span className="text-sm font-medium text-[#DBDBDB]/60">+{selected.dialCode}</span>
         <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <ChevronDown className="w-3.5 h-3.5 text-[#6C7883]" />
         </motion.div>
@@ -251,20 +260,22 @@ function CountryDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute z-50 top-[calc(100%+6px)] left-0 w-64 sm:w-72 rounded-xl border border-[rgba(255,255,255,0.08)]
-              bg-[#1a2535] shadow-2xl shadow-black/50 overflow-hidden"
+            className="absolute z-50 top-[calc(100%+6px)] left-0 w-64 sm:w-72 rounded-xl overflow-hidden shadow-2xl"
+            style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)' }}
           >
             {/* Search */}
-            <div className="p-2 border-b border-[rgba(255,255,255,0.06)]">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#242F3D]">
-                <Search className="w-3.5 h-3.5 text-[#6C7883] shrink-0" />
+            <div className="p-2" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                <Search className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
                 <input
                   ref={searchRef}
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search country..."
-                  className="flex-1 bg-transparent text-sm text-white placeholder:text-[#6C7883] outline-none"
+                  className="flex-1 bg-transparent text-sm outline-none"
+                  style={{ color: 'var(--text-primary)' }}
+                  onFocus={() => {}}
                 />
               </div>
             </div>
@@ -282,9 +293,9 @@ function CountryDropdown({
                       onSelect(country);
                       setOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#2AABEE]/10
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#DBDBDB]/10
                       transition-colors duration-150 ${
-                        selected.code === country.code ? 'bg-[#2AABEE]/15 text-[#2AABEE]' : 'text-white'
+                        selected.code === country.code ? 'bg-[#DBDBDB]/15 text-[#DBDBDB]' : 'text-white'
                       }`}
                   >
                     <span className="text-lg">{country.flag}</span>
@@ -310,7 +321,7 @@ function AnimatedBackground() {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(42,171,238,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(219,219,219,0.12) 0%, transparent 70%)',
           top: '-10%',
           left: '-10%',
         }}
@@ -321,7 +332,7 @@ function AnimatedBackground() {
       <motion.div
         className="absolute w-[400px] h-[400px] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(29,155,240,0.10) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(100,116,139,0.10) 0%, transparent 70%)',
           bottom: '-10%',
           right: '-5%',
         }}
@@ -332,7 +343,7 @@ function AnimatedBackground() {
       <motion.div
         className="absolute w-[300px] h-[300px] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(42,171,238,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(219,219,219,0.06) 0%, transparent 70%)',
           top: '50%',
           left: '50%',
           translateX: '-50%',
@@ -378,19 +389,20 @@ function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) 
               <motion.div
                 animate={{
                   scale: active ? 1 : 0.85,
-                  boxShadow: active ? '0 0 0 6px rgba(42,171,238,0.18)' : '0 0 0 0px transparent',
+                  boxShadow: active ? '0 0 0 6px rgba(219,219,219,0.18)' : '0 0 0 0px transparent',
                 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 className={`
                   w-9 h-9 rounded-full flex items-center justify-center
                   transition-colors duration-300
                   ${done
-                    ? 'bg-[#2AABEE]'
+                    ? 'bg-[#DBDBDB]'
                     : active
-                    ? 'bg-[#2AABEE]'
-                    : 'bg-[#1C2733] border-2 border-[rgba(255,255,255,0.08)]'
+                    ? 'bg-[#DBDBDB]'
+                    : 'border-2'
                   }
                 `}
+                style={(!done && !active) ? { background: 'var(--bg-input)', borderColor: 'var(--border)' } : {}}
               >
                 {done ? (
                   <CheckCircle2 className="w-4 h-4 text-white" />
@@ -400,7 +412,7 @@ function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) 
               </motion.div>
               <span
                 className={`text-[10px] font-medium transition-colors duration-300 ${
-                  active ? 'text-[#2AABEE]' : done ? 'text-[#2AABEE]/70' : 'text-[#4A5568]'
+                  active ? 'text-[#DBDBDB]' : done ? 'text-[#DBDBDB]/70' : 'text-[#4A5568]'
                 }`}
               >
                 {step.label}
@@ -409,9 +421,9 @@ function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) 
 
             {i < STEP_META.length - 1 && (
               <div className="relative w-10 sm:w-16 h-0.5 mx-1 mb-5">
-                <div className="absolute inset-0 rounded-full bg-[#1C2733]" />
+                <div className="absolute inset-0 rounded-full" style={{ background: 'var(--bg-input)' }} />
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-[#2AABEE] origin-left"
+                  className="absolute inset-0 rounded-full bg-[#DBDBDB] origin-left"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: i < currentIdx ? 1 : 0 }}
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
@@ -574,14 +586,14 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
         <div
           className="relative rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, rgba(36,47,61,0.95) 0%, rgba(28,39,51,0.98) 100%)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--bg-panel)',
+            border: '1px solid var(--border)',
             backdropFilter: 'blur(20px)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(42,171,238,0.05)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(219,219,219,0.05)',
           }}
         >
           {/* Top accent bar with animated shimmer */}
-          <div className="relative h-1 bg-gradient-to-r from-[#1D9BF0] via-[#2AABEE] to-[#1D9BF0]">
+          <div className="relative h-1 bg-gradient-to-r from-[#DBDBDB] via-[#DBDBDB] to-[#DBDBDB]">
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
               animate={{ x: ['-100%', '200%'] }}
@@ -601,20 +613,18 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                 className="relative w-16 h-16 mb-4"
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-[#2AABEE] to-[#1D7FBF] rounded-2xl flex items-center justify-center shadow-lg">
-                  <Cloud className="w-9 h-9 text-white" />
-                </div>
+                <img src="/logo.svg" alt="Cloud Vault" className="w-16 h-16 rounded-2xl shadow-lg" />
                 {/* Glow ring */}
                 <motion.div
                   className="absolute inset-0 rounded-2xl"
-                  style={{ boxShadow: '0 0 0 0px rgba(42,171,238,0.4)' }}
-                  animate={{ boxShadow: ['0 0 0 0px rgba(42,171,238,0.4)', '0 0 0 8px rgba(42,171,238,0)', '0 0 0 0px rgba(42,171,238,0)'] }}
+                  style={{ boxShadow: '0 0 0 0px rgba(219,219,219,0.4)' }}
+                  animate={{ boxShadow: ['0 0 0 0px rgba(219,219,219,0.4)', '0 0 0 8px rgba(219,219,219,0)', '0 0 0 0px rgba(219,219,219,0)'] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeOut', repeatDelay: 1 }}
                 />
               </motion.div>
 
               <h1 className="text-2xl font-bold text-white tracking-tight">CloudVault</h1>
-              <p className="text-sm text-[#6C7883] mt-1">Sign in with your Telegram account</p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Sign in with your Telegram account</p>
             </motion.div>
 
             {/* Step indicator */}
@@ -636,7 +646,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                   className="space-y-5"
                 >
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-[#8B9CAF] uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
                       Phone Number
                     </label>
 
@@ -650,10 +660,16 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                         onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
                         autoFocus={!embedded}
                         required
-                        className="flex-1 h-12 px-3 rounded-r-xl border-2 border-[rgba(255,255,255,0.08)]
-                          bg-[#1C2733] text-white placeholder:text-[#4A5568] text-sm
-                          focus:outline-none focus:border-[#2AABEE] focus:shadow-[0_0_0_3px_rgba(42,171,238,0.1)]
+                        className="flex-1 h-12 px-3 rounded-r-xl border-2 text-sm
+                          focus:outline-none
                           transition-all duration-200"
+                        style={{
+                          background: 'var(--bg-input)',
+                          borderColor: 'var(--border)',
+                          color: 'var(--text-primary)',
+                        }}
+                        onFocus={e => { e.target.style.borderColor = '#DBDBDB'; e.target.style.boxShadow = '0 0 0 3px rgba(219,219,219,0.10)'; }}
+                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
                       />
                     </div>
 
@@ -664,11 +680,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                         className="text-xs text-[#6C7883] flex items-center gap-1.5"
                       >
                         <Phone className="w-3 h-3" />
-                        Full number: <span className="text-[#8B9CAF] font-mono">{phoneNumber}</span>
+                        Full number: <span className="text-[#DBDBDB]/60 font-mono">{phoneNumber}</span>
                       </motion.p>
                     )}
                     {!localNumber && (
-                      <p className="text-xs text-[#4A5568]">Select your country and enter your phone number</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Select your country and enter your phone number</p>
                     )}
                   </div>
 
@@ -676,12 +692,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                     type="submit"
                     disabled={loading || !localNumber.trim()}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full h-12 rounded-xl font-semibold text-sm text-white
-                      bg-gradient-to-r from-[#2AABEE] to-[#1D9BF0]
-                      hover:from-[#1D9BF0] hover:to-[#1a88d3]
+                    className="w-full h-12 rounded-xl font-semibold text-sm
                       disabled:opacity-50 disabled:cursor-not-allowed
-                      transition-all duration-200 shadow-lg shadow-[#2AABEE]/20
+                      transition-all duration-200 shadow-lg
                       flex items-center justify-center gap-2 relative overflow-hidden"
+                    style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
                   >
                     {loading ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Sending<LoadingDots /></>
@@ -707,17 +722,17 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                 >
                   <div className="space-y-4">
                     <div className="text-center">
-                      <label className="text-xs font-medium text-[#8B9CAF] uppercase tracking-wider">
+                      <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
                         Verification Code
                       </label>
-                      <p className="text-sm text-[#6C7883] mt-1">
-                        Code sent to <span className="text-[#8B9CAF] font-mono">{phoneNumber}</span>
+                      <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                        Code sent to <span className="text-[#DBDBDB]/60 font-mono">{phoneNumber}</span>
                       </p>
                     </div>
 
                     <OTPInput value={phoneCode} onChange={setPhoneCode} />
 
-                    <p className="text-xs text-center text-[#4A5568]">
+                    <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
                       Check your Telegram app for the 5-digit code
                     </p>
                   </div>
@@ -727,12 +742,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                       type="submit"
                       disabled={loading || phoneCode.length < 5}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full h-12 rounded-xl font-semibold text-sm text-white
-                        bg-gradient-to-r from-[#2AABEE] to-[#1D9BF0]
-                        hover:from-[#1D9BF0] hover:to-[#1a88d3]
+                      className="w-full h-12 rounded-xl font-semibold text-sm
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-all duration-200 shadow-lg shadow-[#2AABEE]/20
-                        flex items-center justify-center gap-2"
+                        transition-all duration-200 shadow-lg
+                        flex items-center justify-center gap-2 relative overflow-hidden"
+                      style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
                     >
                       {loading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Verifying<LoadingDots /></>
@@ -744,8 +758,9 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                     <button
                       type="button"
                       onClick={goBack}
-                      className="w-full flex items-center justify-center gap-2 text-sm text-[#6C7883]
-                        hover:text-[#8B9CAF] transition-colors duration-200 py-2"
+                      className="w-full flex items-center justify-center gap-2 text-sm
+                        transition-colors duration-200 py-2"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       <ArrowLeft className="w-3.5 h-3.5" /> Change phone number
                     </button>
@@ -773,14 +788,14 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-[#2AABEE]/10 border border-[#2AABEE]/20
+                    <div className="w-14 h-14 rounded-2xl bg-[#DBDBDB]/10 border border-[#DBDBDB]/20
                       flex items-center justify-center">
-                      <Shield className="w-7 h-7 text-[#2AABEE]" />
+                      <Shield className="w-7 h-7 text-[#DBDBDB]" />
                     </div>
                   </motion.div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-[#8B9CAF] uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
                       Two-Factor Password
                     </label>
                     <div className="relative">
@@ -791,21 +806,27 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                         onChange={(e) => setPassword(e.target.value)}
                         autoFocus={!embedded}
                         required
-                        className="w-full h-12 px-3 pr-11 rounded-xl border-2 border-[rgba(255,255,255,0.08)]
-                          bg-[#1C2733] text-white placeholder:text-[#4A5568] text-sm
-                          focus:outline-none focus:border-[#2AABEE] focus:shadow-[0_0_0_3px_rgba(42,171,238,0.1)]
+                        className="w-full h-12 px-3 pr-11 rounded-xl border-2 text-sm
+                          focus:outline-none
                           transition-all duration-200"
+                        style={{
+                          background: 'var(--bg-input)',
+                          borderColor: 'var(--border)',
+                          color: 'var(--text-primary)',
+                        }}
+                        onFocus={e => { e.target.style.borderColor = '#DBDBDB'; e.target.style.boxShadow = '0 0 0 3px rgba(219,219,219,0.10)'; }}
+                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6C7883]
-                          hover:text-[#8B9CAF] transition-colors duration-150"
+                          hover:text-[#DBDBDB]/60 transition-colors duration-150"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-[#4A5568]">Two-step verification is enabled on this account</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Two-step verification is enabled on this account</p>
                   </div>
 
                   <div className="space-y-3">
@@ -813,12 +834,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                       type="submit"
                       disabled={loading || !password}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full h-12 rounded-xl font-semibold text-sm text-white
-                        bg-gradient-to-r from-[#2AABEE] to-[#1D9BF0]
-                        hover:from-[#1D9BF0] hover:to-[#1a88d3]
+                      className="w-full h-12 rounded-xl font-semibold text-sm
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-all duration-200 shadow-lg shadow-[#2AABEE]/20
-                        flex items-center justify-center gap-2"
+                        transition-all duration-200 shadow-lg
+                        flex items-center justify-center gap-2 relative overflow-hidden"
+                      style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
                     >
                       {loading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Signing in<LoadingDots /></>
@@ -830,8 +850,9 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                     <button
                       type="button"
                       onClick={goBack}
-                      className="w-full flex items-center justify-center gap-2 text-sm text-[#6C7883]
-                        hover:text-[#8B9CAF] transition-colors duration-200 py-2"
+                      className="w-full flex items-center justify-center gap-2 text-sm
+                        transition-colors duration-200 py-2"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       <ArrowLeft className="w-3.5 h-3.5" /> Back to code entry
                     </button>
@@ -843,7 +864,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
 
           {/* Footer */}
           <div className="px-5 pb-5 sm:px-8 sm:pb-6 text-center">
-            <p className="text-xs text-[#3D4F5E]">
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
               Secure authentication via Telegram MTProto
             </p>
           </div>

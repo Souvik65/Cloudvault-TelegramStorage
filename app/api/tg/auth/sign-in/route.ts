@@ -12,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Telegram API credentials not configured' }, { status: 500 });
     }
 
-    const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 5, useWSS: true });
+    const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 5, requestRetries: 3 });
+    client.setLogLevel("none" as any);
     try {
       await client.connect();
 
