@@ -24,17 +24,38 @@ export async function GET(req: Request) {
 
     const client = await getClient(sessionString);
 
+    // Resolve the entity first — GramJS requires this for numeric channel IDs
+    // that aren't already cached in the session.
+    let peer: any = channelId;
+    if (channelId !== 'me') {
+      try {
+        peer = await client.getInputEntity(channelId as any);
+      } catch {
+        // If we can't resolve, try fetching dialogs to populate the cache, then retry
+        try {
+          await client.getDialogs({ limit: 200 });
+          peer = await client.getInputEntity(channelId as any);
+        } catch (e2: any) {
+          return NextResponse.json(
+            { error: `Channel not found: ${e2?.message ?? channelId}` },
+            { status: 404 }
+          );
+        }
+      }
+    }
+
     // Paginate through all messages to get every file in the channel
     const allMessages = [];
     let offsetId = 0;
     while (true) {
-      const batch = await client.getMessages(channelId, { limit: 100, offsetId });
+      const batch = await client.getMessages(peer, { limit: 100, offsetId });
       if (!batch.length) break;
       allMessages.push(...batch);
       offsetId = batch[batch.length - 1].id;
       // If we got fewer than 100, we've reached the beginning
       if (batch.length < 100) break;
     }
+
 
     const files = [];
 
@@ -111,6 +132,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ files });
   } catch (error: any) {
     console.error('Get files error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -176,6 +200,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Upload file error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -214,6 +241,9 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Delete file error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

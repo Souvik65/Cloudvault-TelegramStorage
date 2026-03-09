@@ -93,15 +93,15 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Type selector */}
           <div className="space-y-2">
-            <Label className="text-[#8B9CAF]">Type</Label>
+            <Label className="text-[#DBDBDB]/60">Type</Label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setType('feedback')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
                   type === 'feedback'
-                    ? 'border-[#2AABEE] bg-[#2AABEE]/15 text-[#2AABEE]'
-                    : 'border-[rgba(255,255,255,0.14)] bg-[#1C2733] text-[#8B9CAF] hover:text-white hover:border-[rgba(255,255,255,0.25)]'
+                    ? 'border-[#DBDBDB] bg-[#DBDBDB]/15 text-[#DBDBDB]'
+                    : 'border-white/[0.20] bg-[#525252] text-white/70 hover:text-white hover:border-white/[0.35]'
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
@@ -113,7 +113,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
                   type === 'bug'
                     ? 'border-[#EF5350] bg-[#EF5350]/15 text-[#EF5350]'
-                    : 'border-[rgba(255,255,255,0.14)] bg-[#1C2733] text-[#8B9CAF] hover:text-white hover:border-[rgba(255,255,255,0.25)]'
+                    : 'border-white/[0.20] bg-[#525252] text-white/70 hover:text-white hover:border-white/[0.35]'
                 }`}
               >
                 <Bug className="w-4 h-4" />
@@ -124,7 +124,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
           {/* Subject */}
           <div className="space-y-2">
-            <Label htmlFor="subject" className="text-[#8B9CAF]">Subject</Label>
+            <Label htmlFor="subject" className="text-[#DBDBDB]/60">Subject</Label>
             <Input
               id="subject"
               placeholder={type === 'feedback' ? 'What would you like to share?' : 'Brief description of the bug'}
@@ -136,7 +136,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-[#8B9CAF]">Description</Label>
+            <Label htmlFor="description" className="text-[#DBDBDB]/60">Description</Label>
             <textarea
               id="description"
               rows={3}
@@ -148,7 +148,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
-              className="flex w-full rounded-lg border border-[rgba(255,255,255,0.14)] bg-[#1C2733] px-3 py-2 text-sm text-white placeholder:text-[#5A6878] focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:ring-offset-0 focus:border-transparent resize-none min-h-[80px]"
+              className="flex w-full rounded-lg border border-white/[0.20] bg-[#525252] px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#DBDBDB]/50 focus:ring-offset-0 focus:border-transparent resize-none min-h-[80px]"
             />
             <p className="text-xs text-[#6C7883] text-right">{description.length}/1000</p>
           </div>
@@ -169,7 +169,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               disabled={isSubmitting || !subject.trim() || !description.trim()}
               className={`w-full sm:w-auto gap-2 ${
                 type === 'bug'
-                  ? 'bg-[#EF5350] hover:bg-[#E53935] text-white'
+                  ? 'bg-[#EF5350] hover:bg-[#ff6a3d] text-white'
                   : ''
               }`}
             >

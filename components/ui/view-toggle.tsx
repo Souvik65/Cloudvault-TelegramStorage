@@ -8,15 +8,15 @@ export function ViewToggle() {
   const { viewMode, setViewMode } = useUIStore();
 
   return (
-    <div className="flex items-center bg-[#242F3D] rounded-lg p-1 gap-0.5">
+    <div className="flex items-center bg-[#808080] rounded-lg p-1 gap-0.5">
       <button
         onClick={() => setViewMode('grid')}
-        className={`relative p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
+        className={`relative p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-[#6C7883] hover:text-[#DBDBDB]/60'}`}
       >
         {viewMode === 'grid' && (
           <motion.div
             layoutId="viewToggle"
-            className="absolute inset-0 bg-[#2AABEE] rounded-md"
+            className="absolute inset-0 bg-[#DBDBDB] rounded-md"
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           />
         )}
@@ -24,12 +24,12 @@ export function ViewToggle() {
       </button>
       <button
         onClick={() => setViewMode('list')}
-        className={`relative p-2 rounded-md transition-colors ${viewMode === 'list' ? 'text-white' : 'text-[#6C7883] hover:text-[#8B9CAF]'}`}
+        className={`relative p-2 rounded-md transition-colors ${viewMode === 'list' ? 'text-white' : 'text-[#6C7883] hover:text-[#DBDBDB]/60'}`}
       >
         {viewMode === 'list' && (
           <motion.div
             layoutId="viewToggle"
-            className="absolute inset-0 bg-[#2AABEE] rounded-md"
+            className="absolute inset-0 bg-[#DBDBDB] rounded-md"
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           />
         )}

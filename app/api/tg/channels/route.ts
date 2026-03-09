@@ -31,6 +31,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ channels });
   } catch (error: any) {
     console.error('Get channels error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -69,6 +72,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ channelId: channel.id.toString() });
   } catch (error: any) {
     console.error('Create channel error:', error);
+    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

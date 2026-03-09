@@ -7,14 +7,18 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'CloudVault',
-  description: 'Telegram Cloud Storage',
+  title: 'Cloud Vault',
+  description: 'Telegram-powered Cloud Storage',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#17212B] text-white antialiased" suppressHydrationWarning>{children}</body>
+    <html lang="en" data-theme="dark">
+      <body className="antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );
 }
