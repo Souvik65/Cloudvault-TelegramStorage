@@ -55,7 +55,7 @@ export default function Home() {
 
   if (!sessionString) {
     const features = [
-      { icon: InfinityIcon, color: '#DBDBDB', title: 'Unlimited Storage', desc: 'Telegram has no storage cap. Store as much as you want, completely free.' },
+      { icon: InfinityIcon, color: '#DBDBDB', title: 'Unlimited Storage', desc: 'There is no storage cap. Store as much as you want, completely free.' },
       { icon: FolderOpen,   color: '#DBDBDB', title: 'Folder Organisation', desc: 'Create nested folders and keep all your files neatly structured.' },
       { icon: Shield,       color: '#f4db7d', title: 'Private & Secure', desc: 'Files live in your own Telegram account. Only you have access.' },
       { icon: Eye,          color: '#ff6a3d', title: 'Preview & Download', desc: 'Instantly preview images, videos, PDFs, and Word documents.' },
