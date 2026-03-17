@@ -39,23 +39,11 @@ CloudVault is a modern web application that turns your Telegram account into a p
 - **Switch between channels** in the settings panel
 - Track per-channel storage usage and file statistics
 
-### AI Image Analysis
-- Powered by **Google Gemini 2.5 Flash**
-- Extract text from images (OCR)
-- Identify objects and generate detailed descriptions
-- Results displayed inline in the details panel
 
 ### Authentication
 - **Telegram 2FA login** (phone → SMS code → optional password)
 - Secure session management via `gram-js` StringSession
 - Persistent login with Zustand state
-
-### UI/UX
-- Dark Telegram-inspired theme (`#17212B`, `#242F3D`, `#2AABEE`)
-- Smooth animations powered by Motion
-- Responsive layout with collapsible sidebar and right panel
-- Toast notifications for all user actions
-- Loading skeletons for a polished async experience
 
 ---
 
