@@ -90,45 +90,47 @@ export function SettingsPanel() {
     <div className="space-y-6">
       {/* Select channel */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Storage Channel</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-hint)' }}>Storage Channel</h3>
 
         <div className="space-y-2">
           {/* Saved Messages option */}
           <div
-            className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-              storageChannelId === 'me'
-                ? 'border-[#DBDBDB]/60 bg-[#DBDBDB]/10'
-                : 'border-white/[0.15] bg-white/[0.05] hover:border-white/[0.30] hover:bg-white/[0.09]'
-            }`}
+            className="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all"
+            style={storageChannelId === 'me'
+              ? { borderColor: 'var(--accent-rust-border)', background: 'var(--accent-rust-tint)' }
+              : { borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+            onMouseEnter={(e) => { if (storageChannelId !== 'me') { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.background = 'var(--bg-hover)'; } }}
+            onMouseLeave={(e) => { if (storageChannelId !== 'me') { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; } }}
             onClick={() => handleSelectChannel('me', 'Saved Messages')}
           >
             <div>
-              <p className="font-medium text-sm text-white">Saved Messages</p>
-              <p className="text-xs text-white/45">Your personal cloud storage</p>
+              <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>Saved Messages</p>
+              <p className="text-xs" style={{ color: 'var(--text-hint)' }}>Your personal cloud storage</p>
             </div>
-            {storageChannelId === 'me' && <Check className="w-4 h-4 text-[#DBDBDB]" />}
+            {storageChannelId === 'me' && <Check className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />}
           </div>
 
           {loading ? (
-            <p className="text-sm text-white/50 text-center py-4">Loading channels...</p>
+            <p className="text-sm text-center py-4" style={{ color: 'var(--text-hint)' }}>Loading channels...</p>
           ) : (
             channels.map((channel) => (
               <div
                 key={channel.id}
-                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                  storageChannelId === channel.id.toString()
-                    ? 'border-[#DBDBDB]/60 bg-[#DBDBDB]/10'
-                    : 'border-white/[0.15] bg-white/[0.05] hover:border-white/[0.30] hover:bg-white/[0.09]'
-                }`}
+                className="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all"
+                style={storageChannelId === channel.id.toString()
+                  ? { borderColor: 'var(--accent-rust-border)', background: 'var(--accent-rust-tint)' }
+                  : { borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+                onMouseEnter={(e) => { if (storageChannelId !== channel.id.toString()) { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.background = 'var(--bg-hover)'; } }}
+                onMouseLeave={(e) => { if (storageChannelId !== channel.id.toString()) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; } }}
                 onClick={() => handleSelectChannel(channel.id.toString(), channel.title)}
               >
                 <div>
-                  <p className="font-medium text-sm text-white">{channel.title}</p>
-                  <p className="text-xs text-white/45">
+                  <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{channel.title}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-hint)' }}>
                     {channel.isCreator ? 'Owner' : 'Admin'}
                   </p>
                 </div>
-                {storageChannelId === channel.id.toString() && <Check className="w-4 h-4 text-[#DBDBDB]" />}
+                {storageChannelId === channel.id.toString() && <Check className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />}
               </div>
             ))
           )}
@@ -136,26 +138,26 @@ export function SettingsPanel() {
       </div>
 
       {/* Create new channel */}
-      <div className="pt-4 border-t border-white/[0.12] space-y-3">
-        <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Create Channel</h3>
+      <div className="pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+        <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-hint)' }}>Create Channel</h3>
         <div className="flex gap-2">
           <Input
             placeholder="e.g., CloudVault Storage"
             value={newChannelName}
             onChange={(e) => setNewChannelName(e.target.value)}
-            className="bg-white/[0.08] border-white/[0.18] text-white placeholder:text-white/55 focus-visible:ring-[#DBDBDB]/40"
           />
           <Button
             onClick={handleCreateChannel}
             disabled={creating || !newChannelName.trim()}
             size="sm"
-            className="shrink-0 gap-1.5 bg-[#DBDBDB] text-[#3B3B3B] hover:bg-[#C4C4C4] font-semibold"
+            className="shrink-0 gap-1.5 font-semibold"
+            style={{ background: 'var(--accent-rust)', color: '#fff' }}
           >
             <Plus className="w-4 h-4" />
             Create
           </Button>
         </div>
-        <p className="text-xs text-white/45">
+        <p className="text-xs" style={{ color: 'var(--text-hint)' }}>
           Creates a private Telegram channel for unlimited storage.
         </p>
       </div>

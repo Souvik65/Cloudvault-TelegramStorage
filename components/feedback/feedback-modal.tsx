@@ -85,7 +85,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Feedback & Bug Report</DialogTitle>
-          <DialogDescription className="text-[#A0ADB9]">
+          <DialogDescription>
             Help us improve CloudVault by sharing your feedback or reporting a bug.
           </DialogDescription>
         </DialogHeader>
@@ -93,16 +93,15 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Type selector */}
           <div className="space-y-2">
-            <Label className="text-[#DBDBDB]/60">Type</Label>
+            <Label style={{ color: 'var(--text-hint)' }}>Type</Label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setType('feedback')}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                  type === 'feedback'
-                    ? 'border-[#DBDBDB] bg-[#DBDBDB]/15 text-[#DBDBDB]'
-                    : 'border-white/[0.20] bg-[#525252] text-white/70 hover:text-white hover:border-white/[0.35]'
-                }`}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                style={type === 'feedback'
+                  ? { borderColor: 'var(--accent-rust-border)', background: 'var(--accent-rust-tint)', color: 'var(--accent-rust)' }
+                  : { borderColor: 'var(--border)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}
               >
                 <MessageSquare className="w-4 h-4" />
                 Feedback
@@ -110,11 +109,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <button
                 type="button"
                 onClick={() => setType('bug')}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                  type === 'bug'
-                    ? 'border-[#EF5350] bg-[#EF5350]/15 text-[#EF5350]'
-                    : 'border-white/[0.20] bg-[#525252] text-white/70 hover:text-white hover:border-white/[0.35]'
-                }`}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                style={type === 'bug'
+                  ? { borderColor: 'var(--accent-rust-border)', background: 'var(--accent-rust-tint)', color: 'var(--accent-rust)' }
+                  : { borderColor: 'var(--border)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}
               >
                 <Bug className="w-4 h-4" />
                 Report Bug
@@ -124,7 +122,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
           {/* Subject */}
           <div className="space-y-2">
-            <Label htmlFor="subject" className="text-[#DBDBDB]/60">Subject</Label>
+            <Label htmlFor="subject" style={{ color: 'var(--text-hint)' }}>Subject</Label>
             <Input
               id="subject"
               placeholder={type === 'feedback' ? 'What would you like to share?' : 'Brief description of the bug'}
@@ -136,7 +134,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-[#DBDBDB]/60">Description</Label>
+            <Label htmlFor="description" style={{ color: 'var(--text-hint)' }}>Description</Label>
             <textarea
               id="description"
               rows={3}
@@ -148,9 +146,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
-              className="flex w-full rounded-lg border border-white/[0.20] bg-[#525252] px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#DBDBDB]/50 focus:ring-offset-0 focus:border-transparent resize-none min-h-[80px]"
+              className="flex w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 resize-none min-h-[80px]"
+              style={{
+                borderColor: 'var(--border)',
+                background: 'var(--bg-input)',
+                color: 'var(--text-primary)',
+              }}
             />
-            <p className="text-xs text-[#6C7883] text-right">{description.length}/1000</p>
+            <p className="text-xs text-right" style={{ color: 'var(--text-hint)' }}>{description.length}/1000</p>
           </div>
 
           {/* Submit */}
@@ -167,11 +170,8 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <Button
               type="submit"
               disabled={isSubmitting || !subject.trim() || !description.trim()}
-              className={`w-full sm:w-auto gap-2 ${
-                type === 'bug'
-                  ? 'bg-[#EF5350] hover:bg-[#ff6a3d] text-white'
-                  : ''
-              }`}
+              className="w-full sm:w-auto gap-2"
+              style={type === 'bug' ? { background: 'var(--accent-rust)', color: '#fff' } : undefined}
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

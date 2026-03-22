@@ -21,7 +21,8 @@ export function RightPanel({ isOpen, onClose, title, children }: RightPanelProps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 z-30 md:hidden"
+            style={{ background: 'var(--overlay-bg)' }}
             onClick={onClose}
           />
 
@@ -34,13 +35,14 @@ export function RightPanel({ isOpen, onClose, title, children }: RightPanelProps
             className="fixed right-0 top-0 h-full w-full z-40 md:relative md:w-80 md:z-20 flex flex-col shrink-0 border-l"
             style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}
           >
-            <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.10)] shrink-0">
-              <h2 className="text-sm font-semibold text-white">{title}</h2>
+            <div className="h-14 flex items-center justify-between px-4 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h2>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="h-10 w-10 text-[#DBDBDB]/70 hover:text-[#DBDBDB]"
+                className="h-10 w-10"
+                style={{ color: 'var(--text-hint)' }}
               >
                 <X className="w-5 h-5" />
               </Button>

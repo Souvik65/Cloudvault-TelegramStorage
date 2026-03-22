@@ -8,15 +8,20 @@ export function ViewToggle() {
   const { viewMode, setViewMode } = useUIStore();
 
   return (
-    <div className="flex items-center bg-[#808080] rounded-lg p-1 gap-0.5">
+    <div
+      className="flex items-center rounded-lg p-1 gap-0.5 border"
+      style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}
+    >
       <button
         onClick={() => setViewMode('grid')}
-        className={`relative p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-[#6C7883] hover:text-[#DBDBDB]/60'}`}
+        className={`relative p-2 rounded-md transition-colors`}
+        style={{ color: viewMode === 'grid' ? 'var(--text-primary)' : 'var(--text-hint)' }}
       >
         {viewMode === 'grid' && (
           <motion.div
             layoutId="viewToggle"
-            className="absolute inset-0 bg-[#DBDBDB] rounded-md"
+            className="absolute inset-0 rounded-md"
+            style={{ background: 'var(--bg-hover)', border: '1px solid var(--border-hover)' }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           />
         )}
@@ -24,12 +29,14 @@ export function ViewToggle() {
       </button>
       <button
         onClick={() => setViewMode('list')}
-        className={`relative p-2 rounded-md transition-colors ${viewMode === 'list' ? 'text-white' : 'text-[#6C7883] hover:text-[#DBDBDB]/60'}`}
+        className={`relative p-2 rounded-md transition-colors`}
+        style={{ color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-hint)' }}
       >
         {viewMode === 'list' && (
           <motion.div
             layoutId="viewToggle"
-            className="absolute inset-0 bg-[#DBDBDB] rounded-md"
+            className="absolute inset-0 rounded-md"
+            style={{ background: 'var(--bg-hover)', border: '1px solid var(--border-hover)' }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           />
         )}

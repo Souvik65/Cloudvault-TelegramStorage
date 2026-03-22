@@ -8,6 +8,8 @@ import {
   LayoutGrid, List, X, Image as ImageIcon, Video, FileText, LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+
 import { FileUpload } from '@/components/files/file-upload';
 import { NewFolderModal } from '@/components/files/new-folder-modal';
 import { useState, useRef, useEffect } from 'react';
@@ -70,12 +72,13 @@ export function Header() {
     <>
       <header
         className="h-14 sm:h-16 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 shrink-0 z-20 border-b"
-        style={{ background: 'var(--bg-panel)', borderColor: 'var(--border-subtle)' }}
+        style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}
       >
         {/* ── Hamburger (mobile only) ── */}
         <Button
           variant="ghost" size="icon"
-          className="md:hidden text-white/50 hover:text-white hover:bg-white/[0.06] w-9 h-9 shrink-0"
+          className="md:hidden w-9 h-9 shrink-0"
+          style={{ color: 'var(--text-hint)' }}
           onClick={toggleSidebar}
         >
           <Menu className="w-5 h-5" />
@@ -83,15 +86,15 @@ export function Header() {
 
         {/* ── Logo (desktop only) ── */}
       <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-        <img src="/logo.svg" alt="Cloud Vault" className="w-8 h-8 rounded-xl shadow-md" />
-        <span className="text-[15px] font-bold text-white/90 tracking-tight">Cloud Vault</span>
+        <Image src="/logo.svg" alt="Cloud Vault" width={32} height={32} className="w-8 h-8 rounded-xl shadow-md" />
+        <span className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Cloud Vault</span>
       </div>
 
         {/* ── Mobile search (expanded) ── */}
         {mobileSearchOpen ? (
           <div className="flex-1 flex items-center gap-2 sm:hidden">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none z-10" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" style={{ color: 'var(--text-hint)' }} />
               <input
                 type="text" autoFocus
                 placeholder="Search in Cloud Vault"
@@ -99,13 +102,14 @@ export function Header() {
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                className="w-full h-10 pl-9 pr-4 rounded-xl text-sm text-white placeholder:text-white/55 outline-none"
-                style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(219,219,219,0.4)' }}
+                className="w-full h-10 pl-9 pr-4 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
             </div>
             <button
               onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }}
-              className="w-9 h-9 flex items-center justify-center text-white/50 hover:text-white shrink-0"
+              className="w-9 h-9 flex items-center justify-center shrink-0"
+              style={{ color: 'var(--text-hint)' }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -115,7 +119,7 @@ export function Header() {
             {/* Desktop/tablet search */}
             <div className="flex-1 max-w-2xl mx-auto hidden sm:block">
               <div className={`relative flex items-center transition-all duration-200 ${searchFocused ? 'scale-[1.01]' : ''}`}>
-                <Search className="absolute left-4 w-4 h-4 text-white/40 pointer-events-none z-10" />
+                <Search className="absolute left-4 w-4 h-4 pointer-events-none z-10" style={{ color: 'var(--text-hint)' }} />
                 <input
                   type="text"
                   placeholder="Search in Cloud Vault"
@@ -123,15 +127,16 @@ export function Header() {
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setSearchFocused(false)}
-                  className="w-full h-10 sm:h-11 pl-11 pr-4 rounded-2xl text-sm text-white placeholder:text-white/55 outline-none transition-all duration-200"
+                  className="w-full h-10 sm:h-11 pl-11 pr-4 rounded-2xl text-sm outline-none transition-all duration-200"
                   style={{
-                    background:  searchFocused ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.06)',
-                    border:      searchFocused ? '1px solid rgba(219,219,219,0.4)' : '1px solid rgba(255,255,255,0.07)',
-                    boxShadow:   searchFocused ? '0 0 0 3px rgba(219,219,219,0.08)' : 'none',
+                    background:  searchFocused ? 'var(--bg-hover)' : 'var(--bg-body)',
+                    border:      searchFocused ? '1px solid var(--border-hover)' : '1px solid var(--border)',
+                    boxShadow:   searchFocused ? '0 0 0 3px rgba(192,82,42,0.08)' : 'none',
+                    color: 'var(--text-primary)',
                   }}
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-3 text-white/30 hover:text-white/70 transition-colors">
+                  <button onClick={() => setSearchQuery('')} className="absolute right-3 transition-colors" style={{ color: 'var(--text-hint)' }}>
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -146,7 +151,8 @@ export function Header() {
 
               {/* Mobile search icon */}
               <Button variant="ghost" size="icon"
-                className="sm:hidden w-9 h-9 text-white/50 hover:text-white hover:bg-white/[0.06]"
+                className="sm:hidden w-9 h-9"
+                style={{ color: 'var(--text-hint)' }}
                 onClick={() => setMobileSearchOpen(true)}
               >
                 <Search className="w-4 h-4" />
@@ -154,36 +160,40 @@ export function Header() {
 
               {/* Refresh (desktop only) */}
               <Button variant="ghost" size="icon"
-                className="hidden sm:flex w-9 h-9 text-white/40 hover:text-white hover:bg-white/[0.06]"
+                className="hidden sm:flex w-9 h-9"
+                style={{ color: 'var(--text-hint)' }}
                 onClick={handleSync} disabled={isSyncing} title="Sync files"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
               </Button>
 
               {/* View toggle */}
-              <div className="flex items-center bg-white/[0.05] border border-white/[0.08] rounded-lg p-0.5">
+              <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
                 {(['grid','list'] as const).map(mode => (
                   <button key={mode} onClick={() => setViewMode(mode)} title={`${mode} view`}
-                    className={`w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150 ${
-                      viewMode === mode ? 'bg-[#DBDBDB]/20 text-[#DBDBDB]' : 'text-white/30 hover:text-white/60'
-                    }`}
+                    className={`w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150`}
+                    style={viewMode === mode
+                      ? { background: 'var(--accent-rust)', color: '#fff' }
+                      : { color: 'var(--text-hint)' }}
                   >
                     {mode === 'grid' ? <LayoutGrid className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
                   </button>
                 ))}
               </div>
 
-              <div className="w-px h-5 bg-white/[0.08] mx-0.5 hidden sm:block" />
+              <div className="w-px h-5 mx-0.5 hidden sm:block" style={{ background: 'var(--border)' }} />
 
               {/* New Folder */}
               <Button variant="ghost" size="icon"
-                className="w-9 h-9 text-white/60 hover:text-white hover:bg-white/[0.06] sm:hidden"
+                className="w-9 h-9 sm:hidden"
+                style={{ color: 'var(--text-hint)' }}
                 onClick={() => setIsNewFolderOpen(true)} title="New Folder"
               >
                 <FolderPlus className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="sm"
-                className="hidden sm:flex h-9 gap-2 px-3 text-white/60 hover:text-white hover:bg-white/[0.06] text-sm font-medium"
+                className="hidden sm:flex h-9 gap-2 px-3 text-sm font-medium"
+                style={{ color: 'var(--text-hint)' }}
                 onClick={() => setIsNewFolderOpen(true)}
               >
                 <FolderPlus className="w-4 h-4" />
@@ -193,27 +203,31 @@ export function Header() {
 
               {/* Upload */}
               <Button size="sm"
-                className="h-9 gap-1.5 px-3 sm:px-4 font-semibold text-sm"
-                style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 2px 12px rgba(0,0,0,0.20)' }}
+                className="h-9 gap-1.5 px-3 sm:px-4 font-semibold text-sm text-white"
+                style={{ background: 'var(--accent-rust)', boxShadow: '0 2px 8px rgba(192, 82, 42, 0.15)' }}
                 onClick={() => setIsUploadOpen(true)}
               >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload</span>
               </Button>
 
-              <div className="w-px h-5 bg-white/[0.08] mx-0.5" />
+              <div className="w-px h-5 mx-0.5" style={{ background: 'var(--border)' }} />
 
               {/* ── Avatar — mobile only ── */}
               <div ref={profileRef} className="relative sm:hidden">
                 <button
                   onClick={() => setProfileOpen(p => !p)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm cursor-pointer transition-all shadow-md shrink-0 ${
-                    profileOpen ? 'ring-2 ring-[#DBDBDB]/60 ring-offset-1 ring-offset-[#3B3B3B]' : 'hover:opacity-90'
-                  } ${!authUser?.profilePhoto ? 'bg-gradient-to-br from-[#DBDBDB] to-[#C4C4C4]' : ''}`}
+                    profileOpen ? 'ring-2 ring-offset-1' : 'hover:opacity-90'
+                  } ${!authUser?.profilePhoto ? '' : ''}`}
+                  style={{
+                    ...(!authUser?.profilePhoto ? { background: `linear-gradient(135deg, var(--accent-rust), var(--accent-rust-deep))` } : {}),
+                    ...(profileOpen ? { ringColor: 'var(--accent-rust)', ringOffsetColor: 'var(--bg-card)' } : {}),
+                  }}
                   title={`${authUser?.firstName} ${authUser?.lastName}`}
                 >
                   {authUser?.profilePhoto ? (
-                    <img src={authUser.profilePhoto} alt={authUser.firstName} className="w-full h-full rounded-full object-cover" />
+                    <Image src={authUser.profilePhoto} alt={authUser.firstName || 'User'} width={32} height={32} className="w-full h-full rounded-full object-cover" unoptimized />
                   ) : (
                     userInitial
                   )}
@@ -232,25 +246,27 @@ export function Header() {
                       onClick={e => e.stopPropagation()}
                     >
                       {/* User info */}
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/[0.07]">
-                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0 shadow-lg ${!authUser?.profilePhoto ? 'bg-gradient-to-br from-[#DBDBDB] to-[#C4C4C4]' : ''}`}>
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0 shadow-lg`}
+                          style={!authUser?.profilePhoto ? { background: `linear-gradient(135deg, var(--accent-rust), var(--accent-rust-deep))` } : {}}>
                           {authUser?.profilePhoto ? (
-                            <img src={authUser.profilePhoto} alt={authUser.firstName} className="w-full h-full rounded-full object-cover" />
+                            <Image src={authUser.profilePhoto} alt={authUser.firstName || 'User'} width={44} height={44} className="w-full h-full rounded-full object-cover" unoptimized />
                           ) : (
                             userInitial
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[14px] font-semibold text-white truncate leading-tight">
+                          <p className="text-[14px] font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
                             {authUser?.firstName} {authUser?.lastName}
                           </p>
-                          <p className="text-[12px] text-white/40 truncate mt-0.5">
+                          <p className="text-[12px] truncate mt-0.5" style={{ color: 'var(--text-hint)' }}>
                             @{authUser?.username || authUser?.phone}
                           </p>
                         </div>
                         <button
                           onClick={() => { logout(); setProfileOpen(false); }}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-[#ff6a3d] hover:bg-[#ff6a3d]/10 transition-all shrink-0"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all shrink-0"
+                          style={{ color: 'var(--text-hint)' }}
                           title="Log out"
                         >
                           <LogOut className="w-4 h-4" />
@@ -258,52 +274,52 @@ export function Header() {
                       </div>
 
                       {/* Storage */}
-                      <div className="px-4 py-3 border-b border-white/[0.07]">
-                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-2.5">Storage</p>
+                      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--text-hint)' }}>Storage</p>
 
                         {/* Bar */}
                         <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-white/40">Used</span>
-                          <span className="font-semibold text-[#DBDBDB]">{formatSize(totalStorage)}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>Used</span>
+                          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatSize(totalStorage)}</span>
                         </div>
-                        <div className="h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#DBDBDB] to-[#C4C4C4] rounded-full w-full" />
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                          <div className="h-full rounded-full w-full" style={{ background: 'var(--text-primary)' }} />
                         </div>
-                        <p className="text-[10px] text-white/25 mt-1.5">Unlimited via Telegram</p>
+                        <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-hint)' }}>Unlimited via Telegram</p>
                       </div>
 
                       {/* File type breakdown */}
                       <div className="px-4 py-3 space-y-2.5">
-                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-1">File Types</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text-hint)' }}>File Types</p>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-[#DBDBDB]/10 flex items-center justify-center">
-                              <ImageIcon className="w-3.5 h-3.5 text-[#DBDBDB]" />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-rust-tint)' }}>
+                              <ImageIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} />
                             </div>
-                            <span className="text-sm text-white/50">Images</span>
+                            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Images</span>
                           </div>
-                          <span className="text-sm font-semibold text-white/70">{imageCount}</span>
+                          <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>{imageCount}</span>
                         </div>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-[#ff6a3d]/10 flex items-center justify-center">
-                              <Video className="w-3.5 h-3.5 text-[#ff6a3d]" />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-teal-tint)' }}>
+                              <Video className="w-3.5 h-3.5" style={{ color: 'var(--accent-teal)' }} />
                             </div>
-                            <span className="text-sm text-white/50">Videos</span>
+                            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Videos</span>
                           </div>
-                          <span className="text-sm font-semibold text-white/70">{videoCount}</span>
+                          <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>{videoCount}</span>
                         </div>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-[#f4db7d]/10 flex items-center justify-center">
-                              <FileText className="w-3.5 h-3.5 text-[#f4db7d]" />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-rust-tint)' }}>
+                              <FileText className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} />
                             </div>
-                            <span className="text-sm text-white/50">Documents</span>
+                            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Documents</span>
                           </div>
-                          <span className="text-sm font-semibold text-white/70">{documentCount}</span>
+                          <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>{documentCount}</span>
                         </div>
                       </div>
                     </motion.div>

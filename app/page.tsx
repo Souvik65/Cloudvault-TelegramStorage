@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Infinity as InfinityIcon, FolderOpen, Shield, Eye, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useUIStore } from '@/store/use-ui-store';
+import { useThemeStore } from '@/store/use-theme-store';
 import { LoginForm } from '@/components/auth/login-form';
 import { FileList } from '@/components/files/file-list';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -17,6 +18,7 @@ import { Toaster } from 'sonner';
 export default function Home() {
   const { sessionString, user, setUser, logout } = useAuthStore();
   const { rightPanelOpen, closeRightPanel, sidebarOpen, setSidebarOpen } = useUIStore();
+  const { theme } = useThemeStore();
 
   useEffect(() => {
     if (!sessionString || user) return;
@@ -55,38 +57,38 @@ export default function Home() {
 
   if (!sessionString) {
     const features = [
-      { icon: InfinityIcon, color: '#DBDBDB', title: 'Unlimited Storage', desc: 'There is no storage cap. Store as much as you want, completely free.' },
-      { icon: FolderOpen,   color: '#DBDBDB', title: 'Folder Organisation', desc: 'Create nested folders and keep all your files neatly structured.' },
-      { icon: Shield,       color: '#f4db7d', title: 'Private & Secure', desc: 'Files live in your own Telegram account. Only you have access.' },
-      { icon: Eye,          color: '#ff6a3d', title: 'Preview & Download', desc: 'Instantly preview images, videos, PDFs, and Word documents.' },
+      { icon: InfinityIcon, color: 'var(--accent-rust)', title: 'Unlimited Storage', desc: 'There is no storage cap. Store as much as you want, completely free.' },
+      { icon: FolderOpen,   color: 'var(--accent-teal)', title: 'Folder Organisation', desc: 'Create nested folders and keep all your files neatly structured.' },
+      { icon: Shield,       color: 'var(--accent-rust)', title: 'Private & Secure', desc: 'Files live in your own Telegram account. Only you have access.' },
+      { icon: Eye,          color: 'var(--accent-teal)', title: 'Preview & Download', desc: 'Instantly preview images, videos, PDFs, and Word documents.' },
     ];
 
     return (
-      <main className="min-h-dvh bg-[#808080] flex flex-col lg:flex-row relative overflow-x-hidden">
+      <main className="min-h-dvh flex flex-col lg:flex-row relative overflow-x-hidden" style={{ background: 'var(--bg-body)' }}>
         {/* Animated background blobs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <motion.div
             className="absolute w-[500px] h-[500px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(219,219,219,0.12) 0%, transparent 70%)', top: '-10%', left: '-10%' }}
+            style={{ background: 'radial-gradient(circle, rgba(192,82,42,0.08) 0%, transparent 70%)', top: '-10%', left: '-10%' }}
             animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
             transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.div
             className="absolute w-[400px] h-[400px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(100,116,139,0.10) 0%, transparent 70%)', bottom: '-10%', right: '-5%' }}
+            style={{ background: 'radial-gradient(circle, rgba(42,124,111,0.08) 0%, transparent 70%)', bottom: '-10%', right: '-5%' }}
             animate={{ x: [0, -30, 0], y: [0, -40, 0] }}
             transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
           />
           <motion.div
             className="absolute w-[300px] h-[300px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(219,219,219,0.06) 0%, transparent 70%)', top: '50%', left: '50%', translateX: '-50%', translateY: '-50%' }}
+            style={{ background: 'radial-gradient(circle, rgba(192,82,42,0.06) 0%, transparent 70%)', top: '50%', left: '50%', translateX: '-50%', translateY: '-50%' }}
             animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           />
           <div
-            className="absolute inset-0 opacity-[0.025]"
+            className="absolute inset-0 opacity-[0.03]"
             style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
+              backgroundImage: `linear-gradient(var(--text-primary) 1px, transparent 1px), linear-gradient(90deg, var(--text-primary) 1px, transparent 1px)`,
               backgroundSize: '48px 48px',
             }}
           />
@@ -95,31 +97,33 @@ export default function Home() {
         {/* LEFT — Hero + features */}
         <div className="relative z-10 min-h-dvh lg:min-h-0 flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 lg:py-20">
           <motion.div className="flex items-center gap-3 mb-10" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
-            <img src="/logo.svg" alt="Cloud Vault" className="w-12 h-12 rounded-2xl shadow-lg shadow-[#DBDBDB]/20" />
+            <img src="/logo.svg" alt="Cloud Vault" className="w-12 h-12 rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }} />
             <div className="flex flex-col">
-              <span className="text-2xl font-bold text-white tracking-tight leading-none">Cloud Vault</span>
-              <span className="text-[10px] font-semibold text-[#808080] bg-[#f4db7d] border border-[#f4db7d]/30 rounded px-1.5 py-0.5 self-start leading-none mt-1 tracking-wide uppercase">Beta</span>
+              <span className="text-2xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>Cloud Vault</span>
+              <span className="text-[10px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-1 tracking-wide uppercase"
+                style={{ background: 'var(--accent-rust)', border: '1px solid rgba(192,82,42,0.3)' }}>Beta</span>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08, ease: 'easeOut' }}>
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
+            <h2 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-4" style={{ color: 'var(--text-primary)' }}>
               Unlimited Cloud Storage,<br />
-              <span className="text-[#DBDBDB]">Powered by Telegram</span>
+              <span style={{ color: 'var(--accent-rust)' }}>Powered by Telegram</span>
             </h2>
-            <p className="text-[#DBDBDB]/60 text-base lg:text-lg mb-10 max-w-lg leading-relaxed">
+            <p className="text-base lg:text-lg mb-10 max-w-lg leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.8 }}>
               Use your Telegram account as a free, unlimited cloud drive. Organise files into folders, preview them instantly, and access everything from any device — no subscriptions, no limits.
             </p>
           </motion.div>
 
           <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.18, ease: 'easeOut' }}>
             {features.map(({ icon: Icon, color, title, desc }) => (
-              <div key={title} className="bg-[#525252] border border-white/[0.14] rounded-xl p-4 backdrop-blur-sm shadow-md">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: `${color}20` }}>
+              <div key={title} className="rounded-xl p-4 backdrop-blur-sm border"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: '0 1px 3px var(--shadow-color)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: `color-mix(in srgb, ${color} 15%, transparent)` }}>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
-                <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
-                <p className="text-xs text-white/70 leading-relaxed">{desc}</p>
+                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.75 }}>{desc}</p>
               </div>
             ))}
           </motion.div>
@@ -132,11 +136,12 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: 0.9, duration: 0.45 }} aria-label="Scroll to login form"
               >
-                <span className="px-6 py-3 rounded-full bg-[#808080]/70 border border-[#DBDBDB]/50 backdrop-blur-md text-sm font-semibold text-[#DBDBDB] group-hover:bg-[#DBDBDB]/20 transition-colors shadow-lg shadow-black/30">
+                <span className="px-6 py-3 rounded-full backdrop-blur-md text-sm font-semibold transition-colors shadow-lg"
+                  style={{ background: 'var(--bg-hover)', border: '1px solid var(--border-hover)', color: 'var(--accent-rust)', boxShadow: '0 4px 16px var(--shadow-lg)' }}>
                   Login
                 </span>
                 <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }}>
-                  <ChevronDown className="w-5 h-5 text-[#DBDBDB]" />
+                  <ChevronDown className="w-5 h-5" style={{ color: 'var(--accent-rust)' }} />
                 </motion.div>
               </motion.button>
             )}
@@ -148,7 +153,7 @@ export default function Home() {
           <LoginForm embedded />
         </div>
 
-        <Toaster richColors theme="dark" toastOptions={{ style: { border: '1px solid rgba(255,255,255,0.10)' } }} />
+        <Toaster richColors theme={theme} toastOptions={{ style: { border: '1px solid var(--border)' } }} />
       </main>
     );
   }
@@ -160,7 +165,8 @@ export default function Home() {
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+            className="fixed inset-0 z-30 md:hidden"
+            style={{ background: 'var(--backdrop-blur)', backdropFilter: 'blur(4px)' }}
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -189,7 +195,7 @@ export default function Home() {
         {rightPanelOpen === 'file-details' && <FileDetailsPanel />}
       </RightPanel>
 
-      <Toaster richColors theme="dark" toastOptions={{ style: { border: '1px solid rgba(255,255,255,0.10)' } }} />
+      <Toaster richColors theme={theme} toastOptions={{ style: { border: '1px solid var(--border)' } }} />
     </div>
   );
 }

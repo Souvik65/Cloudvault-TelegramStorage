@@ -34,19 +34,18 @@ function canPreview(mimeType: string, name?: string): boolean {
 }
 
 function getIcon(mimeType: string, name: string) {
-  const cls = 'w-4.5 h-4.5';
-  if (!mimeType || mimeType === 'folder') return <Folder className="w-4 h-4 text-[#DBDBDB]" />;
-  if (mimeType.startsWith('image/')) return <ImageIcon className="w-4 h-4 text-[#DBDBDB]" />;
-  if (mimeType.startsWith('video/')) return <Video className="w-4 h-4 text-[#ff6a3d]" />;
-  if (mimeType.startsWith('audio/')) return <FileAudio className="w-4 h-4 text-[#f4db7d]" />;
-  if (mimeType === 'application/pdf') return <FileText className="w-4 h-4 text-[#ff6a3d]" />;
-  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className="w-4 h-4 text-[#f4db7d]" />;
-  if (mimeType.includes('json')) return <FileJson className="w-4 h-4 text-[#66BB6A]" />;
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return <FileSpreadsheet className="w-4 h-4 text-[#26A69A]" />;
-  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className="w-4 h-4 text-[#42A5F5]" />;
+  if (!mimeType || mimeType === 'folder') return <Folder className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('video/')) return <Video className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.startsWith('audio/')) return <FileAudio className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType === 'application/pdf') return <FileText className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('json')) return <FileJson className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
   const ext = name?.split('.').pop()?.toLowerCase();
-  if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'c', 'cpp'].includes(ext || '')) return <FileCode className="w-4 h-4 text-[#42A5F5]" />;
-  return <FileIcon className="w-4 h-4 text-white/25" />;
+  if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'c', 'cpp'].includes(ext || '')) return <FileCode className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} />;
+  return <FileIcon className="w-4 h-4" style={{ color: 'var(--text-hint)' }} />;
 }
 
 export function FileListView({
@@ -56,8 +55,8 @@ export function FileListView({
   return (
     <div className="rounded-2xl overflow-hidden border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold text-white/40 uppercase tracking-widest"
-        style={{ background: 'rgba(0,0,0,0.18)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest"
+        style={{ background: 'var(--bg-hover)', borderBottom: '1px solid var(--border)', color: 'var(--text-hint)' }}>
         <span className="w-8 shrink-0" />
         <span className="flex-1 min-w-0">Name</span>
         <span className="w-28 text-right hidden md:block shrink-0">Modified</span>
@@ -77,44 +76,45 @@ export function FileListView({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.015, duration: 0.18 }}
 
-            className={`group flex items-center gap-3 px-4 py-2.5 border-b cursor-pointer transition-all duration-150 ${
-              isSelected
-                ? 'bg-[#DBDBDB]/10'
-                : 'hover:bg-white/[0.07]'
-            }`}
-            style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+            className={`group flex items-center gap-3 px-4 py-2.5 border-b cursor-pointer transition-all duration-150`}
+            style={{
+              borderColor: 'var(--border)',
+              background: isSelected ? 'var(--accent-rust-tint)' : 'transparent',
+            }}
+            onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
             onClick={e => onFileClick(e, file)}
           >
             {/* Icon */}
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(0,0,0,0.20)' }}>
+              style={{ background: 'var(--bg-hover)' }}>
               {getIcon(file.mimeType, file.name)}
             </div>
 
             {/* Name */}
             <div className="flex-1 min-w-0 flex items-center gap-2">
               <div className="min-w-0">
-                <p className="text-[13px] text-white/80 truncate leading-snug">{file.name}</p>
+                <p className="text-[13px] truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
                 {showPath && file.folderPath && file.folderPath !== '/' && (
-                  <span className="text-[10px] text-[#DBDBDB]/60 flex items-center gap-0.5 mt-0.5">
+                  <span className="text-[10px] flex items-center gap-0.5 mt-0.5" style={{ color: 'var(--text-hint)' }}>
                     <Folder className="w-2.5 h-2.5 shrink-0" />{file.folderPath}
                   </span>
                 )}
                 {/* Mobile: date & size */}
-                <p className="text-[11px] text-white/25 sm:hidden mt-0.5">
+                <p className="text-[11px] sm:hidden mt-0.5" style={{ color: 'var(--text-hint)' }}>
                   {file.hasDocument ? formatSize(file.size) : 'Folder'}
                   {file.uploadDate ? ` · ${format(new Date(file.uploadDate), 'MMM d, yyyy')}` : ''}
                 </p>
               </div>
-              {isFileStar && <Star className="w-3 h-3 text-[#f4db7d] fill-[#f4db7d] shrink-0" />}
+              {isFileStar && <Star className="w-3 h-3 shrink-0" style={{ color: 'var(--accent-rust)', fill: 'var(--accent-rust)' }} />}
             </div>
 
             {/* Date */}
-            <span className="w-28 text-right text-[12px] text-white/30 hidden md:block shrink-0">
+            <span className="w-28 text-right text-[12px] hidden md:block shrink-0" style={{ color: 'var(--text-hint)' }}>
               {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '—'}
             </span>
             {/* Size */}
-            <span className="w-20 text-right text-[12px] text-white/30 hidden sm:block shrink-0">
+            <span className="w-20 text-right text-[12px] hidden sm:block shrink-0" style={{ color: 'var(--text-hint)' }}>
               {file.hasDocument ? formatSize(file.size) : '—'}
             </span>
 
@@ -122,7 +122,8 @@ export function FileListView({
             <div className="w-8 flex items-center justify-center shrink-0">
               <button
                 onClick={e => { e.nativeEvent.stopImmediatePropagation(); onThreeDot(e, file); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.07] sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-all duration-150"
+                className="w-7 h-7 rounded-lg flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-all duration-150"
+                style={{ color: 'var(--text-hint)' }}
               >
                 <MoreVertical className="w-3.5 h-3.5" />
               </button>

@@ -10,16 +10,16 @@ import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
 
 function getLargeIcon(mimeType: string, name: string) {
-  if (!mimeType || mimeType === 'folder') return <Folder className="w-12 h-12 text-[#DBDBDB]" />;
-  if (mimeType.startsWith('image/')) return <ImageIcon className="w-12 h-12 text-[#DBDBDB]" />;
-  if (mimeType.startsWith('video/')) return <Video className="w-12 h-12 text-[#AB47BC]" />;
-  if (mimeType.startsWith('audio/')) return <FileAudio className="w-12 h-12 text-[#FFB74D]" />;
-  if (mimeType === 'application/pdf') return <FileText className="w-12 h-12 text-[#EF5350]" />;
-  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className="w-12 h-12 text-[#FF7043]" />;
-  if (mimeType.includes('json')) return <FileJson className="w-12 h-12 text-[#66BB6A]" />;
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet className="w-12 h-12 text-[#26A69A]" />;
-  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className="w-12 h-12 text-[#42A5F5]" />;
-  return <FileIcon className="w-12 h-12 text-[#6C7883]" />;
+  if (!mimeType || mimeType === 'folder') return <Folder className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('video/')) return <Video className="w-12 h-12" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.startsWith('audio/')) return <FileAudio className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType === 'application/pdf') return <FileText className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('json')) return <FileJson className="w-12 h-12" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet className="w-12 h-12" style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className="w-12 h-12" style={{ color: 'var(--accent-rust)' }} />;
+  return <FileIcon className="w-12 h-12" style={{ color: 'var(--text-hint)' }} />;
 }
 
 export function FileDetailsPanel() {
@@ -31,7 +31,7 @@ export function FileDetailsPanel() {
 
   if (!file) {
     return (
-      <div className="flex items-center justify-center h-full text-[#6C7883] text-sm">
+      <div className="flex items-center justify-center h-full text-sm" style={{ color: 'var(--text-hint)' }}>
         No file selected
       </div>
     );
@@ -80,42 +80,43 @@ export function FileDetailsPanel() {
     <div className="space-y-6">
       {/* File icon */}
       <div className="flex justify-center py-4">
-        <div className="w-20 h-20 rounded-2xl bg-[#808080] flex items-center justify-center">
+        <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-hover)' }}>
           {getLargeIcon(file.mimeType, file.name)}
         </div>
       </div>
 
       {/* File name */}
       <div className="text-center">
-        <h3 className="text-sm font-semibold text-white break-all">{file.name}</h3>
-        <p className="text-xs text-[#6C7883] mt-1">{file.mimeType || 'Unknown type'}</p>
+        <h3 className="text-sm font-semibold break-all" style={{ color: 'var(--text-primary)' }}>{file.name}</h3>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-hint)' }}>{file.mimeType || 'Unknown type'}</p>
       </div>
 
       {/* Details */}
-      <div className="space-y-3 border-t border-[rgba(255,255,255,0.10)] pt-4">
+      <div className="space-y-3 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
         <div className="flex justify-between text-sm">
-          <span className="text-[#6C7883]">Size</span>
-          <span className="text-[#DBDBDB]/60">{file.hasDocument ? formatSize(file.size) : '\u2014'}</span>
+          <span style={{ color: 'var(--text-hint)' }}>Size</span>
+          <span style={{ color: 'var(--text-muted)' }}>{file.hasDocument ? formatSize(file.size) : '\u2014'}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#6C7883]">Uploaded</span>
-          <span className="text-[#DBDBDB]/60">{file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy HH:mm') : '\u2014'}</span>
+          <span style={{ color: 'var(--text-hint)' }}>Uploaded</span>
+          <span style={{ color: 'var(--text-muted)' }}>{file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy HH:mm') : '\u2014'}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#6C7883]">Location</span>
-          <span className="text-[#DBDBDB]/60 truncate ml-4">{file.folderPath || '/'}</span>
+          <span style={{ color: 'var(--text-hint)' }}>Location</span>
+          <span className="truncate ml-4" style={{ color: 'var(--text-muted)' }}>{file.folderPath || '/'}</span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="space-y-2 border-t border-[rgba(255,255,255,0.10)] pt-4">
+      <div className="space-y-2 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
         {file.hasDocument && (
           <Button variant="secondary" className="w-full justify-start gap-3" onClick={handleDownload}>
             <Download className="w-4 h-4" />
             Download
           </Button>
         )}
-        <Button variant="ghost" className="w-full justify-start gap-3 text-[#ff6a3d] hover:text-[#ff6a3d] hover:bg-[#ff6a3d]/10" onClick={handleDelete}>
+        <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleDelete}
+          style={{ color: 'var(--accent-rust)' }}>
           <Trash2 className="w-4 h-4" />
           Delete
         </Button>

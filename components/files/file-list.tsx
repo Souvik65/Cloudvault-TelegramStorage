@@ -61,18 +61,18 @@ function canPreview(mimeType: string, name?: string): boolean {
 
 function getFileIcon(mimeType: string, name: string, size: 'sm' | 'md' | 'lg' = 'md') {
   const cls = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-10 h-10' : 'w-6 h-6';
-  if (!mimeType || mimeType === 'folder') return <Folder className={`${cls} text-[#DBDBDB]`} />;
-  if (mimeType.startsWith('image/')) return <ImageIcon className={`${cls} text-[#DBDBDB]`} />;
-  if (mimeType.startsWith('video/')) return <Video className={`${cls} text-[#ff6a3d]`} />;
-  if (mimeType.startsWith('audio/')) return <FileAudio className={`${cls} text-[#f4db7d]`} />;
-  if (mimeType === 'application/pdf') return <FileText className={`${cls} text-[#ff6a3d]`} />;
-  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className={`${cls} text-[#f4db7d]`} />;
-  if (mimeType.includes('json')) return <FileJson className={`${cls} text-[#66BB6A]`} />;
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return <FileSpreadsheet className={`${cls} text-[#26A69A]`} />;
-  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className={`${cls} text-[#42A5F5]`} />;
+  if (!mimeType || mimeType === 'folder') return <Folder className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.startsWith('video/')) return <Video className={cls} style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.startsWith('audio/')) return <FileAudio className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType === 'application/pdf') return <FileText className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) return <FileArchive className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  if (mimeType.includes('json')) return <FileJson className={cls} style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return <FileSpreadsheet className={cls} style={{ color: 'var(--accent-teal)' }} />;
+  if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('html') || mimeType.includes('css')) return <FileCode className={cls} style={{ color: 'var(--accent-rust)' }} />;
   const ext = name?.split('.').pop()?.toLowerCase();
-  if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'c', 'cpp'].includes(ext || '')) return <FileCode className={`${cls} text-[#42A5F5]`} />;
-  return <FileIcon className={`${cls} text-white/30`} />;
+  if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'c', 'cpp'].includes(ext || '')) return <FileCode className={cls} style={{ color: 'var(--accent-rust)' }} />;
+  return <FileIcon className={cls} style={{ color: 'var(--text-hint)' }} />;
 }
 
 
@@ -420,7 +420,7 @@ export function FileList() {
   if (isLoading) {
     return (
       <div className="flex-1 space-y-4 p-5" style={{ background: 'var(--bg-body)' }}>
-        <div className="h-7 w-40 rounded-xl animate-pulse" style={{ background: 'rgba(0,0,0,0.20)' }} />
+        <div className="h-7 w-40 rounded-xl animate-pulse" style={{ background: 'var(--bg-hover)' }} />
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {Array.from({ length: 10 }).map((_, i) => <FileCardSkeleton key={i} />)}
@@ -448,14 +448,15 @@ export function FileList() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-            style={{ background: 'rgba(26,34,56,0.85)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(192, 82, 42, 0.08)', backdropFilter: 'blur(4px)' }}
           >
             <div className="flex flex-col items-center gap-4 scale-[1.02]">
-              <div className="w-20 h-20 rounded-3xl bg-[#DBDBDB]/15 border-2 border-[#DBDBDB]/40 border-dashed flex items-center justify-center">
-                <UploadCloud className="w-10 h-10 text-[#DBDBDB]" />
+              <div className="w-20 h-20 rounded-3xl border-2 border-dashed flex items-center justify-center"
+                style={{ background: 'var(--accent-rust-tint)', borderColor: 'var(--accent-rust-border)' }}>
+                <UploadCloud className="w-10 h-10" style={{ color: 'var(--accent-rust)' }} />
               </div>
-              <p className="text-xl font-bold text-white">Drop files to upload</p>
-              <p className="text-sm text-white/50">Files will be added to the current folder</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Drop files to upload</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Files will be added to the current folder</p>
             </div>
           </motion.div>
         )}
@@ -468,17 +469,18 @@ export function FileList() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-72 z-50 bg-[#525252] border border-white/[0.10] rounded-2xl p-4 shadow-2xl"
+            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-72 z-50 border rounded-2xl p-4 shadow-lg"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
           >
             <div className="flex items-center gap-3 mb-3">
-              <UploadCloud className="w-4 h-4 text-[#DBDBDB] animate-pulse" />
-              <span className="text-sm font-medium text-white">Uploading...</span>
-              <span className="ml-auto text-xs text-white/40">{Math.round(uploadProgress)}%</span>
+              <UploadCloud className="w-4 h-4 animate-pulse" style={{ color: 'var(--accent-rust)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Uploading...</span>
+              <span className="ml-auto text-xs" style={{ color: 'var(--text-hint)' }}>{Math.round(uploadProgress)}%</span>
             </div>
-            <div className="h-1 bg-white/[0.08] rounded-full overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
               <motion.div
-                className="h-full bg-gradient-to-r from-[#DBDBDB] to-[#C4C4C4] rounded-full"
-                style={{ width: `${uploadProgress}%` }}
+                className="h-full rounded-full"
+                style={{ width: `${uploadProgress}%`, background: 'var(--text-primary)' }}
               />
             </div>
           </motion.div>
@@ -495,7 +497,8 @@ export function FileList() {
               {!isAtRoot && activeSection === 'my-files' && (
                 <button
                   onClick={goBack}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.07] transition-all shrink-0"
+                  className="w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0"
+                  style={{ color: 'var(--text-hint)' }}
                   title="Go back"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -503,14 +506,15 @@ export function FileList() {
               )}
 
               {sectionTitle && (
-                <span className="text-base font-semibold text-white pl-1">{sectionTitle}</span>
+                <span className="text-base font-semibold pl-1" style={{ color: 'var(--text-primary)' }}>{sectionTitle}</span>
               )}
 
               {!sectionTitle && (
                 <>
                   <button
                     onClick={() => { setCurrentFolder('/'); clearSelection(); setActiveSection('my-files'); }}
-                    className="flex items-center gap-1 text-white/40 hover:text-white transition-colors px-1"
+                    className="flex items-center gap-1 transition-colors px-1"
+                    style={{ color: 'var(--text-hint)' }}
                   >
                     <Home className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline text-[13px]">My Files</span>
@@ -518,19 +522,18 @@ export function FileList() {
 
                   {isInDirectFolder ? (
                     <>
-                      <ChevronRight className="w-3 h-3 text-white/20 shrink-0" />
-                      <span className="text-[13px] font-semibold text-white px-1">{storageChannelName || 'Telegram Channel'}</span>
+                      <ChevronRight className="w-3 h-3 shrink-0" style={{ color: 'var(--border-hover)' }} />
+                      <span className="text-[13px] font-semibold px-1" style={{ color: 'var(--text-primary)' }}>{storageChannelName || 'Telegram Channel'}</span>
                     </>
                   ) : (
                     breadcrumbs.map((crumb, index) => (
                       <div key={index} className="flex items-center gap-1 min-w-0">
-                        <ChevronRight className="w-3 h-3 text-white/20 shrink-0" />
+                        <ChevronRight className="w-3 h-3 shrink-0" style={{ color: 'var(--border-hover)' }} />
                         <button
-                          className={`px-1 text-[13px] truncate transition-colors max-w-[120px] ${
-                            index === breadcrumbs.length - 1
-                              ? 'font-semibold text-white'
-                              : 'text-white/40 hover:text-white'
-                          }`}
+                          className={`px-1 text-[13px] truncate transition-colors max-w-[120px]`}
+                          style={index === breadcrumbs.length - 1
+                            ? { fontWeight: 600, color: 'var(--text-primary)' }
+                            : { color: 'var(--text-hint)' }}
                           onClick={() => setCurrentFolder('/' + breadcrumbs.slice(0, index + 1).join('/'))}
                         >
                           {crumb}
@@ -546,15 +549,16 @@ export function FileList() {
             <div className="flex items-center gap-2 shrink-0">
               {selectedFiles.length > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-white/40 hidden sm:inline">{selectedFiles.length} selected</span>
+                  <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-hint)' }}>{selectedFiles.length} selected</span>
                   <button
                     onClick={() => handleDelete(selectedFiles)}
-                    className="flex items-center gap-1 text-xs text-[#ff6a3d] hover:bg-[#ff6a3d]/10 px-2 py-1.5 rounded-lg transition-colors font-medium"
+                    className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg transition-colors font-medium"
+                    style={{ color: 'var(--accent-rust)' }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Delete</span>
                   </button>
-                  <button onClick={clearSelection} className="text-xs text-white/30 hover:text-white/60 px-1.5 py-1.5 transition-colors">
+                  <button onClick={clearSelection} className="text-xs px-1.5 py-1.5 transition-colors" style={{ color: 'var(--text-hint)' }}>
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -564,7 +568,8 @@ export function FileList() {
               <div className="relative" ref={sortRef}>
                 <button
                   onClick={() => setSortOpen(p => !p)}
-                  className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white px-3 py-1.5 rounded-lg border border-white/[0.18] hover:border-white/[0.35] bg-[#525252] hover:bg-[#696969] transition-all"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all"
+                  style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card)' }}
                 >
                   {sortDir === 'asc' ? <SortAsc className="w-3.5 h-3.5" /> : <SortDesc className="w-3.5 h-3.5" />}
                   <span>{sortOptions.find(s => s.value === sortBy)?.label ?? 'Sort'}</span>
@@ -577,23 +582,25 @@ export function FileList() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -4 }}
                       transition={{ duration: 0.12 }}
-                      className="absolute right-0 mt-1.5 w-48 rounded-xl border border-white/[0.1] shadow-2xl overflow-hidden z-30 py-1"
-                      style={{ background: '#525252' }}
+                      className="absolute right-0 mt-1.5 w-48 rounded-xl border shadow-lg overflow-hidden z-30 py-1"
+                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                       onClick={e => e.stopPropagation()}
                     >
                       {sortOptions.map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                          className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                            sortBy === opt.value ? 'text-[#DBDBDB] bg-[#DBDBDB]/10' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
-                          }`}
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
+                          style={sortBy === opt.value
+                            ? { color: 'var(--accent-rust)', background: 'var(--accent-rust-tint)' }
+                            : { color: 'var(--text-muted)' }}
                         >
                           <span>{opt.label}</span>
                           {sortBy === opt.value && (
                             <div
                               onClick={e => { e.stopPropagation(); setSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}
-                              className="text-[#DBDBDB]/70 hover:text-[#DBDBDB] cursor-pointer"
+                              className="cursor-pointer"
+                              style={{ color: 'var(--accent-rust)' }}
                             >
                               {sortDir === 'asc' ? <SortAsc className="w-3.5 h-3.5" /> : <SortDesc className="w-3.5 h-3.5" />}
                             </div>
@@ -609,7 +616,7 @@ export function FileList() {
 
           {/* File count */}
           {filteredFiles.length > 0 && (
-            <p className="text-xs text-white/60 -mt-2">{filteredFiles.length} item{filteredFiles.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs -mt-2" style={{ color: 'var(--text-hint)' }}>{filteredFiles.length} item{filteredFiles.length !== 1 ? 's' : ''}</p>
           )}
 
           {/* Empty state */}
@@ -617,20 +624,22 @@ export function FileList() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-24 rounded-2xl border border-dashed border-white/[0.07]"
+              className="flex flex-col items-center justify-center py-24 rounded-2xl border border-dashed"
+              style={{ borderColor: 'var(--border)' }}
             >
-              <div className="w-20 h-20 rounded-3xl bg-white/[0.04] border border-dashed border-white/[0.10] flex items-center justify-center mb-5">
+              <div className="w-20 h-20 rounded-3xl border border-dashed flex items-center justify-center mb-5"
+                style={{ background: 'var(--bg-hover)', borderColor: 'var(--border)' }}>
                 {activeSection === 'starred'
-                  ? <Star className="w-9 h-9 text-[#f4db7d]/50" />
+                  ? <Star className="w-9 h-9" style={{ color: 'var(--accent-rust)', opacity: 0.6 }} />
                   : activeSection === 'recent'
-                  ? <Clock className="w-9 h-9 text-white/20" />
-                  : <UploadCloud className="w-9 h-9 text-white/20" />
+                  ? <Clock className="w-9 h-9" style={{ color: 'var(--text-hint)', opacity: 0.4 }} />
+                  : <UploadCloud className="w-9 h-9" style={{ color: 'var(--text-hint)', opacity: 0.4 }} />
                 }
               </div>
-              <h3 className="text-[15px] font-semibold text-white/60 mb-1">
+              <h3 className="text-[15px] font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
                 {activeSection === 'starred' ? 'No starred files' : activeSection === 'recent' ? 'No recent files' : 'Drop files here'}
               </h3>
-              <p className="text-[13px] text-white/30 text-center max-w-xs">
+              <p className="text-[13px] text-center max-w-xs" style={{ color: 'var(--text-hint)' }}>
                 {activeSection === 'starred'
                   ? 'Star files to find them quickly'
                   : activeSection === 'recent'
@@ -657,29 +666,31 @@ export function FileList() {
                     transition={{ delay: i * 0.02, duration: 0.2 }}
                     onClick={e => handleFileClick(e, file)}
                     onDoubleClick={() => handleFileDoubleClick(file)}
-                    className={`group relative flex flex-col rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden
-                      ${isSelected
-                        ? 'border-[#DBDBDB]/60 bg-[#DBDBDB]/10 ring-1 ring-[#DBDBDB]/20'
-                        : 'border-white/[0.14] bg-[#525252] hover:bg-[#696969] hover:border-white/[0.25]'
-                      }`}
+                    className="group relative flex flex-col rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden"
+                    style={isSelected
+                      ? { borderColor: 'var(--accent-rust-border)', background: 'var(--accent-rust-tint)' }
+                      : { borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+                    onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; } }}
+                    onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border)'; } }}
                   >
                     {/* Card icon area */}
                     <div className={`flex items-center justify-center pt-5 pb-3 px-4 ${isFolder ? 'pt-6 pb-4' : ''}`}>
                       {isFolder ? (
                         <div className="relative">
                           <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                            style={{ background: 'rgba(219,219,219,0.12)' }}>
-                            <Folder className="w-8 h-8 text-[#DBDBDB]" />
+                            style={{ background: 'rgba(192,82,42,0.08)' }}>
+                            <Folder className="w-8 h-8" style={{ color: 'var(--accent-rust)' }} />
                           </div>
                           {file._directCount !== undefined && (
-                            <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-[#DBDBDB] text-[#808080] rounded-full px-1.5 py-0.5 leading-none">
+                            <span className="absolute -bottom-1 -right-1 text-[9px] font-bold text-white rounded-full px-1.5 py-0.5 leading-none"
+                              style={{ background: 'var(--accent-rust)' }}>
                               {file._directCount}
                             </span>
                           )}
                         </div>
                       ) : (
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ background: 'rgba(255,255,255,0.10)' }}>
+                          style={{ background: 'rgba(192,82,42,0.06)' }}>
                           {getFileIcon(file.mimeType, file.name, 'md')}
                         </div>
                       )}
@@ -687,15 +698,16 @@ export function FileList() {
 
                     {/* Card info */}
                     <div className="px-3 pb-3 flex-1">
-                      <p className="text-[13px] font-medium text-white truncate leading-snug mb-0.5" title={file.name}>
+                      <p className="text-[13px] font-medium truncate leading-snug mb-0.5" title={file.name}
+                        style={{ color: 'var(--text-primary)' }}>
                         {file.name}
                       </p>
                       {searchQuery && file.folderPath && file.folderPath !== '/' && (
-                        <p className="text-[10px] text-[#DBDBDB] truncate flex items-center gap-0.5 mb-1">
+                        <p className="text-[10px] truncate flex items-center gap-0.5 mb-1" style={{ color: 'var(--accent-rust)' }}>
                           <Folder className="w-2.5 h-2.5 shrink-0" />{file.folderPath}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-[11px] text-white/30 mt-1">
+                      <div className="flex items-center justify-between text-[11px] mt-1" style={{ color: 'var(--text-hint)' }}>
                         <span>
                           {file.isVirtualChannelFolder
                             ? `${file._directCount} file${file._directCount !== 1 ? 's' : ''}`
@@ -709,12 +721,13 @@ export function FileList() {
                     <div className="absolute top-1.5 right-1.5 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-opacity duration-150">
                       {isFileStar && (
                         <span className="w-6 h-6 flex items-center justify-center sm:hidden">
-                          <Star className="w-3 h-3 text-[#f4db7d] fill-[#f4db7d]" />
+                          <Star className="w-3 h-3" style={{ color: 'var(--accent-rust)', fill: 'var(--accent-rust)' }} />
                         </span>
                       )}
                       <button
                         onClick={e => handleThreeDot(e, file)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/60 hover:text-white hover:bg-black/60 transition-all"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-sm transition-all"
+                        style={{ background: 'var(--bg-card)', opacity: 0.8, color: 'var(--text-hint)' }}
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
                       </button>
@@ -723,7 +736,7 @@ export function FileList() {
                     {/* Star icon if starred (always visible) */}
                     {isFileStar && (
                       <div className="absolute top-2 left-2 opacity-100 group-hover:opacity-0 transition-opacity">
-                        <Star className="w-3.5 h-3.5 text-[#f4db7d] fill-[#f4db7d]" />
+                        <Star className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)', fill: 'var(--accent-rust)' }} />
                       </div>
                     )}
                   </motion.div>
@@ -757,9 +770,10 @@ export function FileList() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[100] rounded-xl border border-white/[0.10] shadow-2xl overflow-hidden py-1 w-52"
+            className="fixed z-[100] rounded-xl border shadow-lg overflow-hidden py-1 w-52"
             style={{
-              background: '#525252',
+              background: 'var(--bg-card)',
+              borderColor: 'var(--border)',
               top: dropdown.buttonBottom + 6,
               right: window.innerWidth - dropdown.buttonRight,
             }}
@@ -767,7 +781,10 @@ export function FileList() {
           >
             {canPreview(contextFile.mimeType, contextFile.name) && (
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                 onClick={() => { handlePreview(contextFile); setDropdown(null); }}
               >
                 <Eye className="w-4 h-4" /> Preview
@@ -775,25 +792,34 @@ export function FileList() {
             )}
             {contextFile.hasDocument && (
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                 onClick={() => { handleDownload(contextFile); setDropdown(null); }}
               >
                 <Download className="w-4 h-4" /> Download
               </button>
             )}
             <button
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
               onClick={() => { toggleStarred(contextFile.id); setDropdown(null); }}
             >
               {isStarred(contextFile.id)
-                ? <><StarOff className="w-4 h-4 text-[#f4db7d]" /> Remove Star</>
-                : <><Star className="w-4 h-4 text-[#f4db7d]" /> Star</>
+                ? <><StarOff className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} /> Remove Star</>
+                : <><Star className="w-4 h-4" style={{ color: 'var(--accent-rust)' }} /> Star</>
               }
             </button>
-            <div className="my-1 border-t border-white/[0.06]" />
+            <div className="my-1 border-t" style={{ borderColor: 'var(--border)' }} />
             {!contextFile.isVirtualChannelFolder && (
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#ff6a3d] hover:bg-[#ff6a3d]/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--accent-rust)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-rust-tint)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 onClick={() => { handleDelete([contextFile.id]); setDropdown(null); }}
               >
                 <Trash2 className="w-4 h-4" /> Delete
@@ -806,18 +832,21 @@ export function FileList() {
       {/* Preview dialog */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && closePreview()}>
         <DialogContent
-          className={`p-0 bg-black/95 border-none overflow-hidden flex flex-col w-full h-[95dvh] sm:h-[90vh] ${
+          className={`p-0 overflow-hidden flex flex-col w-full h-[95dvh] sm:h-[90vh] ${
             previewType === 'docx' ? 'sm:max-w-3xl' : 'sm:max-w-5xl'
           }`}
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
         >
-          <DialogHeader className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
-            <DialogTitle className="text-white text-sm font-medium">{previewFile?.name}</DialogTitle>
+          <DialogHeader className="absolute top-4 left-4 z-10 backdrop-blur-md p-3 rounded-xl border"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', opacity: 0.9 }}>
+            <DialogTitle className="text-sm font-medium">{previewFile?.name}</DialogTitle>
             <DialogDescription className="hidden">File preview</DialogDescription>
           </DialogHeader>
-          <div className={`relative flex-1 h-full flex items-center justify-center ${previewType === 'docx' ? 'p-0' : 'p-4'}`}>
+          <div className={`relative flex-1 h-full flex items-center justify-center ${previewType === 'docx' ? 'p-0' : 'p-4'}`}
+            style={{ background: previewType === 'docx' ? 'var(--bg-hover)' : 'var(--bg-body)' }}>
             {isPreviewLoading ? (
-              <div className="text-white/70 flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-[#DBDBDB] border-t-transparent rounded-full animate-spin" />
+              <div className="flex flex-col items-center gap-3" style={{ color: 'var(--text-hint)' }}>
+                <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-rust)', borderTopColor: 'transparent' }} />
                 <p>Loading preview...</p>
               </div>
             ) : previewType === 'image' && previewUrl ? (
@@ -827,11 +856,11 @@ export function FileList() {
             ) : previewType === 'pdf' && previewUrl ? (
               <iframe src={previewUrl} className="w-full h-full rounded-lg border-0" title={previewFile?.name} />
             ) : previewType === 'docx' && docxHtml ? (
-              <div className="w-full h-full overflow-auto bg-white rounded-lg">
-                <div className="p-8 text-black prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: docxHtml }} />
+              <div className="w-full h-full overflow-auto rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                <div className="p-8 prose prose-sm max-w-none" style={{ color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: docxHtml }} />
               </div>
             ) : !isPreviewLoading ? (
-              <div className="text-white/70">Failed to load preview</div>
+              <div style={{ color: 'var(--text-hint)' }}>Failed to load preview</div>
             ) : null}
           </div>
         </DialogContent>

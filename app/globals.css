@@ -1,39 +1,120 @@
 @import "tailwindcss";
 
-/* ── Gray design tokens ──────────────────────────────────────────────── */
-:root {
-  --cv-100: #DBDBDB;
-  --cv-200: #C4C4C4;
-  --cv-300: #ADADAD;
-  --cv-400: #969696;
-  --cv-500: #808080;
-  --cv-600: #696969;
-  --cv-700: #525252;
-  --cv-800: #3B3B3B;
+/* ── Theme transition (smooth dark ↔ light switching) ────────────────── */
+*,
+*::before,
+*::after {
+  transition: background-color 0.35s ease, color 0.3s ease, border-color 0.35s ease, box-shadow 0.35s ease, fill 0.3s ease, stroke 0.3s ease;
 }
 
-/* ── Dark mode (default) ─────────────────────────────────────────────── */
+/* ── Light mode (default) ─────────────────────────────────────────────── */
 :root,
-[data-theme="dark"] {
-  --bg-body:     #808080;
-  --bg-card:     #525252;
-  --bg-panel:    #3B3B3B;
-  --bg-input:    #525252;
-  --bg-hover:    rgba(255,255,255,0.07);
-  --text-primary: #FFFFFF;
-  --text-muted:  rgba(255,255,255,0.50);
-  --text-faint:  rgba(255,255,255,0.28);
-  --border:      rgba(255,255,255,0.15);
-  --border-subtle: rgba(255,255,255,0.07);
-  --accent:      #DBDBDB;
-  --scrollbar-thumb: rgba(255,255,255,0.22);
-  --scrollbar-hover: rgba(255,255,255,0.35);
-  --selection-bg: rgba(219,219,219,0.3);
+[data-theme="light"] {
+  /* Text */
+  --text-primary:    #18130F;
+  --text-secondary:  #2E2720;
+  --text-muted:      #4A4237;
+  --text-hint:       #6E6458;
+
+  /* Backgrounds */
+  --bg-body:   #FAF8F4;
+  --bg-card:   #FFFFFF;
+  --bg-panel:  #FFFFFF;
+  --bg-input:  #FFFFFF;
+  --bg-hover:  #F3EFE7;
+
+  /* Borders & Dividers */
+  --border:       #E6E0D4;
+  --border-hover: #D2CAB8;
+  --divider:      #E6E0D4;
+
+  /* Sand Neutrals */
+  --sand-300: #D2CAB8;
+  --sand-400: #A89E8A;
+  --sand-500: #7D7260;
+
+  /* Accent Colors */
+  --accent-rust:        #C0522A;
+  --accent-rust-deep:   #A03F20;
+  --accent-rust-tint:   #F9EDE6;
+  --accent-rust-border: #E8C4B0;
+
+  --accent-teal:        #2A7C6F;
+  --accent-teal-tint:   #E6F3F0;
+  --accent-teal-border: #BFD9D5;
+
+  /* UI helpers */
+  --shadow-color:    rgba(24, 19, 15, 0.06);
+  --shadow-md:       rgba(24, 19, 15, 0.08);
+  --shadow-lg:       rgba(24, 19, 15, 0.10);
+  --scrollbar-thumb: rgba(24, 19, 15, 0.22);
+  --scrollbar-hover: rgba(24, 19, 15, 0.35);
+  --selection-bg:    rgba(192, 82, 42, 0.15);
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.70);
+  --backdrop-blur: rgba(0, 0, 0, 0.10);
+
+  /* Focus ring offset */
+  --ring-offset: #FAF8F4;
+
+  color-scheme: light;
 }
 
+/* ── Dark mode ────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Text */
+  --text-primary:    #E8E4DF;
+  --text-secondary:  #C5BFB6;
+  --text-muted:      #9A9389;
+  --text-hint:       #7A7268;
 
+  /* Backgrounds */
+  --bg-body:   #121212;
+  --bg-card:   #1E1E1E;
+  --bg-panel:  #1A1A1A;
+  --bg-input:  #252525;
+  --bg-hover:  #2A2A2A;
 
+  /* Borders & Dividers */
+  --border:       #333333;
+  --border-hover: #444444;
+  --divider:      #333333;
 
+  /* Sand Neutrals (darker) */
+  --sand-300: #444444;
+  --sand-400: #555555;
+  --sand-500: #666666;
+
+  /* Accent Colors (slightly brighter for contrast) */
+  --accent-rust:        #E06B42;
+  --accent-rust-deep:   #C0522A;
+  --accent-rust-tint:   #2A1F1A;
+  --accent-rust-border: #5A3828;
+
+  --accent-teal:        #3DAF9F;
+  --accent-teal-tint:   #1A2D2A;
+  --accent-teal-border: #2A4A44;
+
+  /* UI helpers */
+  --shadow-color:    rgba(0, 0, 0, 0.30);
+  --shadow-md:       rgba(0, 0, 0, 0.40);
+  --shadow-lg:       rgba(0, 0, 0, 0.50);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-hover: rgba(255, 255, 255, 0.25);
+  --selection-bg:    rgba(224, 107, 66, 0.25);
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.80);
+  --backdrop-blur: rgba(0, 0, 0, 0.40);
+
+  /* Focus ring offset */
+  --ring-offset: #121212;
+
+  color-scheme: dark;
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
 @theme {
   --animate-gradient: gradient 15s ease infinite;
 
@@ -64,7 +145,6 @@
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
     overscroll-behavior-x: none;
-    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
@@ -105,17 +185,19 @@ button, a, input, textarea, select, [role="button"] {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .cv-panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .cv-dropdown {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
