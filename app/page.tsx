@@ -149,7 +149,7 @@ export default function Home() {
         </div>
 
         {/* RIGHT — Login form */}
-        <div ref={loginSectionRef} className="relative z-10 min-h-dvh lg:min-h-0 flex items-center justify-center px-4 py-12 lg:w-[500px] lg:shrink-0 lg:py-0">
+        <div ref={loginSectionRef} className="relative z-10 min-h-dvh lg:min-h-0 flex items-center w-full justify-center px-4 py-12 lg:w-1/2 xl:w-[500px] lg:shrink-0 lg:py-0">
           <LoginForm embedded />
         </div>
 

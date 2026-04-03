@@ -13,17 +13,23 @@ export interface FileMetadata {
   isVirtualChannelFolder?: boolean;
 }
 
+export type FileFilterType = 'all' | 'image' | 'video' | 'document' | 'other';
+
 interface FileState {
   files: FileMetadata[];
   currentFolder: string;
   isLoading: boolean;
   error: string | null;
   searchQuery: string;
+  filterType: FileFilterType;
+  filterGlobal: boolean;
   storageChannelId: string;
   storageChannelName: string;
   setFiles: (files: FileMetadata[]) => void;
   setCurrentFolder: (folder: string) => void;
   setSearchQuery: (query: string) => void;
+  setFilterType: (filter: FileFilterType) => void;
+  setFilterGlobal: (global: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setStorageChannelId: (channelId: string) => void;
@@ -38,11 +44,15 @@ export const useFileStore = create<FileState>()(
       isLoading: false,
       error: null,
       searchQuery: '',
+      filterType: 'all',
+      filterGlobal: false,
       storageChannelId: 'me',
       storageChannelName: 'Saved Messages',
       setFiles: (files) => set({ files }),
       setCurrentFolder: (currentFolder) => set({ currentFolder }),
       setSearchQuery: (searchQuery) => set({ searchQuery }),
+      setFilterType: (filterType) => set({ filterType }),
+      setFilterGlobal: (filterGlobal) => set({ filterGlobal }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       setStorageChannelId: (storageChannelId) => set({ storageChannelId }),

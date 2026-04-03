@@ -78,7 +78,7 @@ function getFileIcon(mimeType: string, name: string, size: 'sm' | 'md' | 'lg' = 
 
 
 export function FileList() {
-  const { files, setFiles, currentFolder, setCurrentFolder, searchQuery, isLoading, setLoading, setError, storageChannelId, storageChannelName } = useFileStore();
+  const { files, setFiles, currentFolder, setCurrentFolder, searchQuery, filterType, setFilterType, filterGlobal, setFilterGlobal, isLoading, setLoading, setError, storageChannelId, storageChannelName } = useFileStore();
   const { sessionString } = useAuthStore();
   const { viewMode, openRightPanel, setSelectedFileForDetails, sortBy, setSortBy, starred, toggleStarred, activeSection, setActiveSection } = useUIStore();
   const [selectedFiles, setSelectedFiles] = useState<number[]>([]);
@@ -254,41 +254,81 @@ export function FileList() {
   const filteredFiles = useMemo(() => {
     let result: any[];
 
-    // Section filters
-    if (activeSection === 'starred') {
-      result = files.filter(f => starred.includes(f.id) && f.hasDocument);
-    } else if (activeSection === 'recent') {
-      result = [...files]
-        .filter(f => f.hasDocument)
-        .sort((a, b) => (b.uploadDate || 0) - (a.uploadDate || 0))
-        .slice(0, 20);
-    } else {
-      // My files + search
+    // Helper: apply type filter to a list
+    const applyTypeFilter = (list: any[]) => {
+      if (filterType === 'all') return list;
+      return list.filter(f => {
+        if (!f.hasDocument && f.mimeType === 'folder') return false;
+        const isImage = f.mimeType?.startsWith('image/') || !!f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg|avif|heic)$/i);
+        const isVideo = f.mimeType?.startsWith('video/') || !!f.name?.match(/\.(mp4|mkv|avi|mov|webm)$/i);
+        const isDocument = 
+          f.mimeType === 'application/pdf' ||
+          f.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+          f.mimeType === 'application/msword' ||
+          f.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+          f.mimeType === 'application/vnd.ms-powerpoint' ||
+          f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          f.mimeType === 'application/vnd.ms-excel' ||
+          f.mimeType?.includes('spreadsheet') ||
+          f.mimeType?.includes('presentation') ||
+          f.mimeType === 'text/plain' ||
+          f.mimeType === 'text/csv' ||
+          f.mimeType === 'application/rtf' ||
+          !!f.name?.match(/\.(pdf|doc|docx|ppt|pptx|xls|xlsx|csv|txt|rtf|odt|ods|odp)$/i);
+        switch (filterType) {
+          case 'image': return isImage;
+          case 'video': return isVideo;
+          case 'document': return isDocument;
+          case 'other': return !isImage && !isVideo && !isDocument;
+          default: return true;
+        }
+      });
+    };
+
+    // Global filter (sidebar): search ALL files, skip folder scoping
+    if (filterGlobal && filterType !== 'all') {
+      result = applyTypeFilter(files.filter(f => f.hasDocument));
       if (searchQuery) {
-        return files.filter(f => f.hasDocument && f.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+        const q = searchQuery.toLowerCase();
+        result = result.filter(f => f.name?.toLowerCase().includes(q));
       }
-      if (currentFolder === TELEGRAM_DIRECT_PATH) {
-        result = files.filter(f => f.isDirectUpload && f.hasDocument);
+    } else {
+      // Section / folder scoping first
+      if (activeSection === 'starred') {
+        result = files.filter(f => starred.includes(f.id) && f.hasDocument);
+      } else if (activeSection === 'recent') {
+        result = [...files]
+          .filter(f => f.hasDocument)
+          .sort((a, b) => (b.uploadDate || 0) - (a.uploadDate || 0))
+          .slice(0, 20);
       } else {
-        result = files.filter(f => {
-          if (f.isDirectUpload) return false;
-          return f.folderPath === currentFolder;
-        });
-        if (currentFolder === '/') {
-          const hasDirectUploads = files.some(f => f.isDirectUpload && f.hasDocument);
-          if (hasDirectUploads) {
-            const directCount = files.filter(f => f.isDirectUpload && f.hasDocument).length;
-            result = [
-              ...result,
-              {
-                id: VIRTUAL_FOLDER_ID, name: storageChannelName || 'Telegram Channel',
-                mimeType: 'folder', hasDocument: false, size: 0,
-                folderPath: '/', uploadDate: 0, isVirtualChannelFolder: true, _directCount: directCount,
-              },
-            ];
+        if (searchQuery) {
+          result = files.filter(f => f.hasDocument && f.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+        } else if (currentFolder === TELEGRAM_DIRECT_PATH) {
+          result = files.filter(f => f.isDirectUpload && f.hasDocument);
+        } else {
+          result = files.filter(f => {
+            if (f.isDirectUpload) return false;
+            return f.folderPath === currentFolder;
+          });
+          if (currentFolder === '/') {
+            const hasDirectUploads = files.some(f => f.isDirectUpload && f.hasDocument);
+            if (hasDirectUploads) {
+              const directCount = files.filter(f => f.isDirectUpload && f.hasDocument).length;
+              result = [
+                ...result,
+                {
+                  id: VIRTUAL_FOLDER_ID, name: storageChannelName || 'Telegram Channel',
+                  mimeType: 'folder', hasDocument: false, size: 0,
+                  folderPath: '/', uploadDate: 0, isVirtualChannelFolder: true, _directCount: directCount,
+                },
+              ];
+            }
           }
         }
       }
+      // Then apply folder-scoped filter (pills)
+      result = applyTypeFilter(result);
     }
 
     // Sort
@@ -302,7 +342,7 @@ export function FileList() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return [...folders, ...sorted];
-  }, [files, currentFolder, searchQuery, storageChannelName, sortBy, sortDir, activeSection, starred]);
+  }, [files, currentFolder, searchQuery, filterType, filterGlobal, storageChannelName, sortBy, sortDir, activeSection, starred]);
 
   const handleDelete = async (ids: number[]) => {
     if (!confirm(`Delete ${ids.length > 1 ? `${ids.length} items` : 'this item'}?`)) return;
@@ -614,9 +654,30 @@ export function FileList() {
             </div>
           </div>
 
+          {/* Format Filters */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none snap-x">
+            {(['all', 'image', 'video', 'document', 'other'] as const).map((ft) => (
+              <button
+                key={ft}
+                onClick={() => { setFilterType(ft); setFilterGlobal(false); }}
+                aria-pressed={filterType === ft}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border snap-start ${
+                  filterType === ft 
+                    ? 'border-transparent shadow-sm' 
+                    : 'bg-transparent border-[var(--border)] hover:bg-[var(--bg-card)]'
+                }`}
+                style={filterType === ft 
+                  ? { background: 'var(--text-primary)', color: 'var(--bg-body)' } 
+                  : { color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+              >
+                {ft.charAt(0).toUpperCase() + ft.slice(1)}
+              </button>
+            ))}
+          </div>
+
           {/* File count */}
           {filteredFiles.length > 0 && (
-            <p className="text-xs -mt-2" style={{ color: 'var(--text-hint)' }}>{filteredFiles.length} item{filteredFiles.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs pt-1" style={{ color: 'var(--text-hint)' }}>{filteredFiles.length} item{filteredFiles.length !== 1 ? 's' : ''}</p>
           )}
 
           {/* Empty state */}

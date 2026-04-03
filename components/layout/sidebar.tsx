@@ -10,13 +10,14 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   HardDrive, LogOut, MessageSquare, Settings,
   Image as ImageIcon, FileText, Video, Clock, Star,
-  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen
+  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen,
+  Filter
 } from 'lucide-react';
 import { formatSize } from '@/lib/utils';
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
-  const { files, currentFolder, setCurrentFolder } = useFileStore();
+  const { files, currentFolder, setCurrentFolder, setFilterType, setFilterGlobal, filterType } = useFileStore();
   const { openRightPanel, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapsed, activeSection, setActiveSection, starred } = useUIStore();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
@@ -27,19 +28,35 @@ export function Sidebar() {
 
   const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic', 'gif', 'bmp', 'tiff'];
   const VIDEO_EXTS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'];
+  const DOC_EXTS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv', 'txt', 'rtf', 'odt', 'ods', 'odp'];
   const getExt = (name: string) => name?.split('.').pop()?.toLowerCase() ?? '';
   const isImageFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('image/') || IMAGE_EXTS.includes(getExt(f.name)));
   const isVideoFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('video/') || VIDEO_EXTS.includes(getExt(f.name)));
+  const isDocumentFile = (f: FileMetadata) => f.hasDocument && (
+    f.mimeType === 'application/pdf' ||
+    f.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    f.mimeType === 'application/msword' ||
+    f.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    f.mimeType === 'application/vnd.ms-powerpoint' ||
+    f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    f.mimeType === 'application/vnd.ms-excel' ||
+    f.mimeType?.includes('spreadsheet') ||
+    f.mimeType?.includes('presentation') ||
+    f.mimeType === 'text/plain' ||
+    f.mimeType === 'text/csv' ||
+    f.mimeType === 'application/rtf' ||
+    DOC_EXTS.includes(getExt(f.name))
+  );
 
   const images = files.filter(isImageFile).length;
   const videos = files.filter(isVideoFile).length;
-  const documents = files.filter(f => f.hasDocument && !isImageFile(f) && !isVideoFile(f)).length;
+  const documents = files.filter(isDocumentFile).length;
   const starredCount = starred.length;
 
   const navItems = [
-    { id: 'my-files' as const, label: 'My Files', icon: HardDrive, action: () => { setCurrentFolder('/'); setActiveSection('my-files'); closeSidebarOnMobile(); } },
-    { id: 'recent' as const, label: 'Recent', icon: Clock, action: () => { setActiveSection('recent'); closeSidebarOnMobile(); } },
-    { id: 'starred' as const, label: 'Starred', icon: Star, action: () => { setActiveSection('starred'); closeSidebarOnMobile(); }, badge: starredCount > 0 ? starredCount : undefined },
+    { id: 'my-files' as const, label: 'My Files', icon: HardDrive, action: () => { setCurrentFolder('/'); setActiveSection('my-files'); setFilterType('all'); setFilterGlobal(false); closeSidebarOnMobile(); } },
+    { id: 'recent' as const, label: 'Recent', icon: Clock, action: () => { setActiveSection('recent'); setFilterType('all'); setFilterGlobal(false); closeSidebarOnMobile(); } },
+    { id: 'starred' as const, label: 'Starred', icon: Star, action: () => { setActiveSection('starred'); setFilterType('all'); setFilterGlobal(false); closeSidebarOnMobile(); }, badge: starredCount > 0 ? starredCount : undefined },
   ];
 
   const userInitial = user?.firstName?.[0]?.toUpperCase() || 'U';
@@ -168,25 +185,43 @@ export function Sidebar() {
                   </div>
                   <p className="text-[10px] mt-1" style={{ color: 'var(--text-hint)' }}>Unlimited via Telegram</p>
                 </div>
-
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>All Files</p>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <div 
+                    onClick={() => { setActiveSection('my-files'); setFilterType('image'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                       <ImageIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Images
                     </div>
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{images}</span>
+                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{images}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-primary)' }}>
+                  <div 
+                    onClick={() => { setActiveSection('my-files'); setFilterType('video'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                       <Video className="w-3.5 h-3.5" style={{ color: 'var(--accent-teal)' }} /> Videos
                     </div>
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{videos}</span>
+                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{videos}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-primary)' }}>
+                  <div 
+                    onClick={() => { setActiveSection('my-files'); setFilterType('document'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                       <FileText className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Documents
                     </div>
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{documents}</span>
+                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{documents}</span>
+                  </div>
+                  <div 
+                    onClick={() => { setActiveSection('my-files'); setFilterType('other'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                      <Filter className="w-3.5 h-3.5" style={{ color: 'var(--text-hint)' }} /> Others
+                    </div>
+                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{files.filter(f => f.hasDocument).length - images - videos - documents}</span>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import {
   Phone, KeyRound, Lock, ChevronDown,
   Search, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, Shield,
 } from 'lucide-react';
+import Image from 'next/image';
 
 // ─── Country Data ──────────────────────────────────────────────────────────────
 
@@ -114,13 +115,14 @@ const DEFAULT_COUNTRY = COUNTRIES.find(c => c.code === 'US')!;
 
 // ─── OTP Input ─────────────────────────────────────────────────────────────────
 
-function OTPInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+const OTPInput = memo(function OTPInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const OTP_LENGTH = 5;
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const chars = value.split('').concat(Array(OTP_LENGTH).fill('')).slice(0, OTP_LENGTH);
 
   const handleChange = (index: number, char: string) => {
+    if (disabled) return;
     const digit = char.replace(/\D/g, '').slice(-1);
     const next = chars.map((c, i) => (i === index ? digit : c));
     onChange(next.join(''));
@@ -130,6 +132,7 @@ function OTPInput({ value, onChange }: { value: string; onChange: (v: string) =>
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
     if (e.key === 'Backspace') {
       if (chars[index]) {
         const next = chars.map((c, i) => (i === index ? '' : c));
@@ -148,6 +151,7 @@ function OTPInput({ value, onChange }: { value: string; onChange: (v: string) =>
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
+    if (disabled) return;
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
     onChange(pasted.padEnd(OTP_LENGTH, '').slice(0, OTP_LENGTH));
     const nextFocus = Math.min(pasted.length, OTP_LENGTH - 1);
@@ -155,63 +159,76 @@ function OTPInput({ value, onChange }: { value: string; onChange: (v: string) =>
   };
 
   return (
-    <div className="flex gap-2 sm:gap-3 justify-center">
+    <div className="flex gap-2 sm:gap-3 justify-center" dir="ltr">
       {Array.from({ length: OTP_LENGTH }).map((_, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.06 }}
+          initial={{ opacity: 0, y: 10, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 }}
         >
           <input
             ref={(el) => { inputRefs.current[i] = el; }}
             type="text"
             inputMode="numeric"
             maxLength={1}
+            disabled={disabled}
             value={chars[i]}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onPaste={handlePaste}
-            onFocus={(e) => e.target.select()}
             className={`
-              w-11 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl border-2 outline-none
-              caret-[#DBDBDB] transition-all duration-200
-              ${chars[i]
-                ? 'border-[#DBDBDB] shadow-[0_0_12px_rgba(219,219,219,0.2)]'
-                : 'focus:border-[#DBDBDB] focus:shadow-[0_0_12px_rgba(219,219,219,0.12)]'
-              }
+              w-12 h-14 sm:w-14 sm:h-16 text-center text-xl font-bold rounded-2xl border-2 outline-none
+              transition-all duration-200 min-h-[48px] min-w-[48px]
+              placeholder:text-[var(--text-hint)]
+              focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_30%,transparent)]
+              disabled:opacity-50 disabled:cursor-not-allowed
             `}
             style={{
-              background: chars[i] ? 'var(--bg-card)' : 'var(--bg-input)',
-              borderColor: chars[i] ? '#DBDBDB' : 'var(--border)',
+              background: chars[i] ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)',
+              borderColor: chars[i] ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)',
               color: 'var(--text-primary)',
+              boxShadow: chars[i] ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)',
+            }}
+            onFocus={e => {
+               e.target.select();
+               e.target.style.borderColor = 'var(--accent-rust)'; 
+               e.target.style.background = 'var(--bg-card)';
+               e.target.style.boxShadow = '0 0 0 4px color-mix(in srgb, var(--accent-rust) 20%, transparent)';
+            }}
+            onBlur={e => {
+               e.target.style.borderColor = chars[i] ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)'; 
+               e.target.style.background = chars[i] ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)';
+               e.target.style.boxShadow = chars[i] ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)';
             }}
           />
         </motion.div>
       ))}
     </div>
   );
-}
+});
 
 // ─── Country Dropdown ──────────────────────────────────────────────────────────
 
-function CountryDropdown({
+const CountryDropdown = memo(function CountryDropdown({
   selected,
   onSelect,
+  disabled
 }: {
   selected: Country;
   onSelect: (c: Country) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const filtered = COUNTRIES.filter(
+  const filtered = useMemo(() => COUNTRIES.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.dialCode.includes(search.replace('+', ''))
-  );
+  ), [search]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -227,8 +244,6 @@ function CountryDropdown({
   useEffect(() => {
     if (open) {
       setTimeout(() => searchRef.current?.focus(), 50);
-    } else {
-      setSearch('');
     }
   }, [open]);
 
@@ -236,20 +251,28 @@ function CountryDropdown({
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 h-12 px-3 rounded-l-xl border-2 border-r-0
-          text-[var(--text-primary)] transition-all duration-200 focus:outline-none min-w-[90px]"
-        style={{
-          background: 'var(--bg-input)',
-          borderColor: 'var(--border)',
+        disabled={disabled}
+        onClick={() => {
+          if (open) setSearch('');
+          setOpen(!open);
         }}
-        onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-        onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        className="group flex items-center justify-between gap-2 min-h-[56px] px-4 rounded-l-2xl border-2 border-r-0
+          transition-colors duration-200 focus:outline-none min-w-[110px] sm:min-w-[120px] outline-none
+          disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_30%,transparent)]"
+        style={{
+          background: 'color-mix(in srgb, var(--bg-input) 50%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+          color: 'var(--text-primary)',
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-rust)'; }}
+        onBlur={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--border) 60%, transparent)'; }}
       >
-        <span className="text-xl leading-none">{selected.flag}</span>
-        <span className="text-sm font-medium text-[#DBDBDB]/60">+{selected.dialCode}</span>
+        <span className="text-2xl leading-none pt-1">{selected.flag}</span>
+        <span className="text-[15px] font-bold tracking-wide mt-1 opacity-90 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          +{selected.dialCode}
+        </span>
         <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="w-3.5 h-3.5 text-[#6C7883]" />
+          <ChevronDown className="w-4 h-4 text-[var(--text-hint)]" />
         </motion.div>
       </button>
 
@@ -259,31 +282,35 @@ function CountryDropdown({
             initial={{ opacity: 0, y: -8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute z-50 top-[calc(100%+6px)] left-0 w-64 sm:w-72 rounded-xl overflow-hidden shadow-2xl"
-            style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            className="absolute z-50 top-[calc(100%+8px)] left-0 w-72 sm:w-80 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-3xl"
+            style={{ 
+              background: 'color-mix(in srgb, var(--bg-panel) 85%, transparent)', 
+              borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)', 
+              borderWidth: 1,
+              boxShadow: '0 32px 64px var(--shadow-lg), 0 0 0 1px color-mix(in srgb, var(--border) 30%, transparent), inset 0 1px 1px color-mix(in srgb, var(--bg-body) 40%, transparent)'
+            }}
           >
             {/* Search */}
-            <div className="p-2" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-input)' }}>
-                <Search className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
+            <div className="p-3" style={{ borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)' }}>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-transparent transition-colors focus-within:border-[var(--accent-rust)]" style={{ background: 'var(--bg-input)' }}>
+                <Search className="w-4.5 h-4.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
                 <input
                   ref={searchRef}
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search country..."
-                  className="flex-1 bg-transparent text-sm outline-none"
+                  className="flex-1 bg-transparent text-sm outline-none w-full min-h-[24px]"
                   style={{ color: 'var(--text-primary)' }}
-                  onFocus={() => {}}
                 />
               </div>
             </div>
 
             {/* List */}
-            <div className="max-h-52 overflow-y-auto py-1 custom-scroll">
+            <div className="max-h-60 overflow-y-auto py-2 custom-scroll">
               {filtered.length === 0 ? (
-                <p className="text-center text-sm text-[#6C7883] py-4">No results</p>
+                <p className="text-center text-sm py-6" style={{ color: 'var(--text-hint)' }}>No results found</p>
               ) : (
                 filtered.map((country) => (
                   <button
@@ -292,15 +319,21 @@ function CountryDropdown({
                     onClick={() => {
                       onSelect(country);
                       setOpen(false);
+                      setSearch('');
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#DBDBDB]/10
-                      transition-colors duration-150 ${
-                        selected.code === country.code ? 'bg-[#DBDBDB]/15 text-[#DBDBDB]' : 'text-white'
-                      }`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150
+                      hover:bg-[color-mix(in_srgb,var(--bg-hover)_40%,transparent)] outline-none focus-visible:bg-[color-mix(in_srgb,var(--bg-hover)_60%,transparent)]`}
+                    style={{
+                      backgroundColor: selected.code === country.code ? 'color-mix(in srgb, var(--selection-bg) 50%, transparent)' : 'transparent',
+                      color: selected.code === country.code ? 'var(--accent-rust)' : 'var(--text-primary)',
+                      fontWeight: selected.code === country.code ? 600 : 500
+                    }}
                   >
-                    <span className="text-lg">{country.flag}</span>
-                    <span className="flex-1 text-left truncate">{country.name}</span>
-                    <span className="text-[#6C7883] shrink-0">+{country.dialCode}</span>
+                    <span className="text-xl pt-1">{country.flag}</span>
+                    <span className="flex-1 text-left truncate tracking-wide text-[15px]">{country.name}</span>
+                    <span className="shrink-0 font-mono tracking-wider text-[13px] font-bold mt-0.5" style={{ color: selected.code === country.code ? 'inherit' : 'var(--text-muted)' }}>
+                      +{country.dialCode}
+                    </span>
                   </button>
                 ))
               )}
@@ -310,60 +343,59 @@ function CountryDropdown({
       </AnimatePresence>
     </div>
   );
-}
+});
 
 // ─── Animated Background ───────────────────────────────────────────────────────
 
-function AnimatedBackground() {
+const AnimatedBackground = memo(function AnimatedBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      {/* Blob 1 */}
+    <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true" style={{ zIndex: 0 }}>
+      {/* Dynamic blurred orbs */}
       <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full"
+        className="absolute w-[60vmin] h-[60vmin] rounded-full blur-[100px] opacity-20 sm:opacity-30 mix-blend-screen"
         style={{
-          background: 'radial-gradient(circle, rgba(219,219,219,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-rust) 0%, transparent 70%)',
           top: '-10%',
           left: '-10%',
         }}
         animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
       />
-      {/* Blob 2 */}
       <motion.div
-        className="absolute w-[400px] h-[400px] rounded-full"
+        className="absolute w-[50vmin] h-[50vmin] rounded-full blur-[80px] opacity-20 sm:opacity-30 mix-blend-screen"
         style={{
-          background: 'radial-gradient(circle, rgba(100,116,139,0.10) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--text-primary) 0%, transparent 70%)',
           bottom: '-10%',
           right: '-5%',
         }}
         animate={{ x: [0, -30, 0], y: [0, -40, 0] }}
         transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
       />
-      {/* Blob 3 — subtle center glow */}
       <motion.div
-        className="absolute w-[300px] h-[300px] rounded-full"
+        className="absolute w-[40vmin] h-[40vmin] rounded-full blur-[60px] opacity-[0.08] mix-blend-screen"
         style={{
-          background: 'radial-gradient(circle, rgba(219,219,219,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-rust) 0%, transparent 70%)',
           top: '50%',
           left: '50%',
           translateX: '-50%',
           translateY: '-50%',
         }}
-        animate={{ scale: [1, 1.15, 1] }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.05, 0.15, 0.05] }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
       />
-      {/* Grid overlay */}
+      
+      {/* Subtle grid texture */}
       <div
-        className="absolute inset-0 opacity-[0.025]"
+        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.04]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
+            'linear-gradient(var(--text-primary) 1px, transparent 1px), linear-gradient(90deg, var(--text-primary) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
         }}
       />
     </div>
   );
-}
+});
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
 
@@ -373,60 +405,62 @@ const STEP_META = [
   { id: 'password', icon: Lock, label: '2FA' },
 ] as const;
 
-function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) {
+const StepIndicator = memo(function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) {
   const currentIdx = STEP_META.findIndex((s) => s.id === current);
 
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div className="flex items-center justify-center gap-0 mb-10 w-full px-2">
       {STEP_META.map((step, i) => {
         const done = i < currentIdx;
         const active = i === currentIdx;
         const Icon = step.icon;
 
         return (
-          <div key={step.id} className="flex items-center">
-            <div className="flex flex-col items-center gap-1.5">
+          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-2">
               <motion.div
                 animate={{
-                  scale: active ? 1 : 0.85,
-                  boxShadow: active ? '0 0 0 6px rgba(219,219,219,0.18)' : '0 0 0 0px transparent',
+                  scale: active ? 1 : 0.9,
+                  boxShadow: active ? '0 0 0 6px color-mix(in srgb, var(--accent-rust) 20%, transparent)' : '0 0 0 0px transparent',
                 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 className={`
-                  w-9 h-9 rounded-full flex items-center justify-center
-                  transition-colors duration-300
-                  ${done
-                    ? 'bg-[#DBDBDB]'
-                    : active
-                    ? 'bg-[#DBDBDB]'
-                    : 'border-2'
-                  }
+                  w-10 h-10 rounded-full flex items-center justify-center
+                  transition-colors duration-300 relative z-10
                 `}
-                style={(!done && !active) ? { background: 'var(--bg-input)', borderColor: 'var(--border)' } : {}}
+                style={{
+                  background: done || active ? 'var(--text-primary)' : 'var(--bg-input)',
+                  borderColor: done || active ? 'transparent' : 'var(--border)',
+                  borderWidth: (done || active) ? 0 : 2,
+                  color: (done || active) ? 'var(--bg-body)' : 'var(--text-hint)'
+                }}
               >
                 {done ? (
-                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                 ) : (
-                  <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-[#4A5568]'}`} />
+                  <Icon className="w-4.5 h-4.5 flex-shrink-0" style={{ strokeWidth: active ? 2.5 : 2 }} />
                 )}
               </motion.div>
               <span
-                className={`text-[10px] font-medium transition-colors duration-300 ${
-                  active ? 'text-[#DBDBDB]' : done ? 'text-[#DBDBDB]/70' : 'text-[#4A5568]'
-                }`}
+                className={`text-[11px] font-bold transition-colors duration-300 uppercase tracking-wider absolute mt-12`}
+                style={{
+                  color: active ? 'var(--text-primary)' : done ? 'var(--text-secondary)' : 'var(--text-hint)',
+                  opacity: active ? 1 : 0.6
+                }}
               >
                 {step.label}
               </span>
             </div>
 
             {i < STEP_META.length - 1 && (
-              <div className="relative w-10 sm:w-16 h-0.5 mx-1 mb-5">
-                <div className="absolute inset-0 rounded-full" style={{ background: 'var(--bg-input)' }} />
+              <div className="relative flex-1 h-[2px] mx-3 -mt-6">
+                <div className="absolute inset-0 rounded-full" style={{ background: 'color-mix(in srgb, var(--border) 60%, transparent)' }} />
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-[#DBDBDB] origin-left"
+                  className="absolute inset-0 rounded-full origin-left"
+                  style={{ background: 'var(--text-primary)' }}
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: i < currentIdx ? 1 : 0 }}
-                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
                 />
               </div>
             )}
@@ -435,24 +469,25 @@ function StepIndicator({ current }: { current: 'phone' | 'code' | 'password' }) 
       })}
     </div>
   );
-}
+});
 
 // ─── Loading Dots ──────────────────────────────────────────────────────────────
 
-function LoadingDots() {
+const LoadingDots = memo(function LoadingDots() {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1.5 ml-2">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="w-1.5 h-1.5 rounded-full bg-white inline-block"
-          animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+          className="w-1.5 h-1.5 rounded-full inline-block"
+          style={{ background: 'currentColor' }}
+          animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+          transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
         />
       ))}
     </span>
   );
-}
+});
 
 // ─── Main Login Form ───────────────────────────────────────────────────────────
 
@@ -474,11 +509,14 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
   // Combine country code + local number into full international format
   const phoneNumber = `+${selectedCountry.dialCode}${localNumber.replace(/\D/g, '')}`;
 
-  const goBack = () => {
+  const goBack = useCallback(() => {
     setDirection(-1);
-    if (step === 'code') setStep('phone');
-    else if (step === 'password') setStep('code');
-  };
+    setStep((prev) => {
+      if (prev === 'code') return 'phone';
+      if (prev === 'password') return 'code';
+      return prev;
+    });
+  }, []);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -508,7 +546,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
     }
   };
 
-  const handleSignIn = async (e?: React.FormEvent) => {
+  const handleSignIn = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     setLoading(true);
     try {
@@ -547,7 +585,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [phoneNumber, phoneCodeHash, phoneCode, password, sessionString, step, setSession, setUser]);
 
   // Auto-submit when OTP is fully filled
   useEffect(() => {
@@ -563,13 +601,12 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
       hasAutoSubmittedRef.current = true;
       handleSignIn();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phoneCode, step, loading]);
+  }, [phoneCode, step, loading, handleSignIn]);
 
   const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 30 : -30, opacity: 0, scale: 0.96 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -30 : 30, opacity: 0, scale: 0.96 }),
   };
 
   return (
@@ -577,295 +614,317 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
       {!embedded && <AnimatedBackground />}
 
       <motion.div
-        className="w-full max-w-[440px] mx-auto"
-        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        className="w-full sm:max-w-[440px] px-4 sm:px-0 mx-auto relative z-10"
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* Card */}
+        {/* Pro Max Glassmorphism Card */}
         <div
-          className="relative rounded-2xl overflow-hidden"
+          className="relative rounded-[2rem] overflow-hidden flex flex-col w-full backdrop-blur-[32px]"
           style={{
-            background: 'var(--bg-panel)',
-            border: '1px solid var(--border)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(219,219,219,0.05)',
+            background: 'color-mix(in srgb, var(--bg-panel) 75%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            boxShadow: '0 32px 64px var(--shadow-lg), inset 0 1px 1px color-mix(in srgb, var(--bg-body) 30%, transparent)',
           }}
         >
           {/* Top accent bar with animated shimmer */}
-          <div className="relative h-1 bg-gradient-to-r from-[#DBDBDB] via-[#DBDBDB] to-[#DBDBDB]">
+          <div className="relative h-1.5 w-full overflow-hidden" style={{ background: 'var(--accent-rust)' }}>
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
+              animate={{ x: ['-200%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1 }}
             />
           </div>
 
-          <div className="p-5 sm:p-8">
+          <div className="p-7 sm:p-10 flex flex-col">
             {/* Logo + title */}
             <motion.div
-              className="flex flex-col items-center mb-7"
+              className="flex flex-col items-center mb-10"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
             >
               <motion.div
-                className="relative w-16 h-16 mb-4"
-                whileHover={{ scale: 1.05 }}
+                className="relative w-20 h-20 mb-6 mix-blend-multiply dark:mix-blend-screen"
+                whileHover={{ scale: 1.05, rotate: 2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               >
-                <img src="/logo.svg" alt="Cloud Vault" className="w-16 h-16 rounded-2xl shadow-lg" />
+                <Image src="/logo.svg" alt="Cloud Vault" width={80} height={80} className="w-full h-full rounded-[1.5rem] shadow-xl" />
                 {/* Glow ring */}
                 <motion.div
-                  className="absolute inset-0 rounded-2xl"
-                  style={{ boxShadow: '0 0 0 0px rgba(219,219,219,0.4)' }}
-                  animate={{ boxShadow: ['0 0 0 0px rgba(219,219,219,0.4)', '0 0 0 8px rgba(219,219,219,0)', '0 0 0 0px rgba(219,219,219,0)'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeOut', repeatDelay: 1 }}
+                  className="absolute inset-0 rounded-[1.5rem] pointer-events-none"
+                  style={{ boxShadow: '0 0 0 0px color-mix(in srgb, var(--accent-rust) 40%, transparent)' }}
+                  animate={{ boxShadow: ['0 0 0 0px color-mix(in srgb, var(--accent-rust) 50%, transparent)', '0 0 0 16px rgba(0,0,0,0)', '0 0 0 0px rgba(0,0,0,0)'] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut', repeatDelay: 0.5 }}
                 />
               </motion.div>
 
-              <h1 className="text-2xl font-bold text-white tracking-tight">CloudVault</h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Sign in with your Telegram account</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>CloudVault</h1>
+              <p className="text-[14px] mt-2 font-semibold tracking-wide" style={{ color: 'var(--text-muted)' }}>Sign in securely using Telegram</p>
             </motion.div>
 
             {/* Step indicator */}
             <StepIndicator current={step} />
 
             {/* Step forms */}
-            <AnimatePresence mode="wait" custom={direction}>
-              {/* ── Step 1: Phone ── */}
-              {step === 'phone' && (
-                <motion.form
-                  key="phone"
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  onSubmit={handleSendCode}
-                  className="space-y-5"
-                >
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
-                      Phone Number
-                    </label>
+            <div className="relative min-h-[220px]">
+              <AnimatePresence mode="wait" custom={direction}>
+                {/* ── Step 1: Phone ── */}
+                {step === 'phone' && (
+                  <motion.form
+                    key="phone"
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    onSubmit={handleSendCode}
+                    className="space-y-6 pb-2"
+                  >
+                    <div className="space-y-3">
+                      <label htmlFor="phone-input" className="text-xs font-bold uppercase tracking-widest pl-1" style={{ color: 'var(--text-muted)' }}>
+                        Mobile Number
+                      </label>
 
-                    {/* Country code + number input row */}
-                    <div className="flex">
-                      <CountryDropdown selected={selectedCountry} onSelect={setSelectedCountry} />
-                      <input
-                        type="tel"
-                        placeholder="Phone number"
-                        value={localNumber}
-                        onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
-                        autoFocus={!embedded}
-                        required
-                        className="flex-1 h-12 px-3 rounded-r-xl border-2 text-sm
-                          focus:outline-none
-                          transition-all duration-200"
-                        style={{
-                          background: 'var(--bg-input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={e => { e.target.style.borderColor = '#DBDBDB'; e.target.style.boxShadow = '0 0 0 3px rgba(219,219,219,0.10)'; }}
-                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-                      />
+                      {/* Country code + number input row - Touch Target Min 56px */}
+                      <div className="flex shadow-sm rounded-2xl group transition-shadow focus-within:shadow-md">
+                        <CountryDropdown selected={selectedCountry} onSelect={setSelectedCountry} disabled={loading} />
+                        <input
+                          id="phone-input"
+                          type="tel"
+                          placeholder="Phone number"
+                          value={localNumber}
+                          disabled={loading}
+                          onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
+                          autoFocus={!embedded}
+                          required
+                          className="flex-1 min-h-[56px] w-full px-4 rounded-r-2xl border-2 text-[16px] sm:text-lg font-semibold tracking-wider
+                            transition-all duration-200 outline-none placeholder:font-normal
+                            placeholder:text-[var(--text-hint)] focus:border-[var(--accent-rust)] disabled:opacity-60 disabled:cursor-not-allowed
+                            focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_25%,transparent)]"
+                          style={{
+                            background: 'color-mix(in srgb, var(--bg-input) 30%, transparent)',
+                            borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+                            color: 'var(--text-primary)',
+                          }}
+                          onFocus={e => { e.target.style.borderColor = 'var(--accent-rust)'; }}
+                          onBlur={e => { e.target.style.borderColor = 'color-mix(in srgb, var(--border) 60%, transparent)'; }}
+                        />
+                      </div>
+
+                      <div className="h-6 flex items-center px-1">
+                        {localNumber ? (
+                          <motion.p
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-[13px] font-medium flex items-center gap-2"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <Phone className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} />
+                            Sending to: <span className="font-mono tracking-wider font-bold" style={{ color: 'var(--text-primary)' }}>{phoneNumber}</span>
+                          </motion.p>
+                        ) : (
+                          <p className="text-[12px] font-semibold flex items-center gap-2 opacity-80" style={{ color: 'var(--text-hint)' }}>
+                            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'currentColor' }} />
+                            Select country and enter your local number
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    {localNumber && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-[#6C7883] flex items-center gap-1.5"
-                      >
-                        <Phone className="w-3 h-3" />
-                        Full number: <span className="text-[#DBDBDB]/60 font-mono">{phoneNumber}</span>
-                      </motion.p>
-                    )}
-                    {!localNumber && (
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Select your country and enter your phone number</p>
-                    )}
-                  </div>
+                    <motion.button
+                      type="submit"
+                      disabled={loading || !localNumber.trim()}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full min-h-[56px] rounded-2xl font-bold text-[15px] tracking-wide
+                        disabled:opacity-60 disabled:cursor-not-allowed
+                        transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-0.5
+                        flex items-center justify-center gap-2 relative overflow-hidden group outline-none
+                        focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_50%,transparent)]"
+                      style={{ background: 'var(--accent-rust)', color: '#FFFFFF' }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {loading ? (
+                        <><Loader2 className="w-5 h-5 animate-spin opacity-80" /> Processing<LoadingDots /></>
+                      ) : (
+                        <>Send Verification Code</>
+                      )}
+                    </motion.button>
+                  </motion.form>
+                )}
 
-                  <motion.button
-                    type="submit"
-                    disabled={loading || !localNumber.trim()}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full h-12 rounded-xl font-semibold text-sm
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      transition-all duration-200 shadow-lg
-                      flex items-center justify-center gap-2 relative overflow-hidden"
-                    style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
+                {/* ── Step 2: OTP Code ── */}
+                {step === 'code' && (
+                  <motion.form
+                    key="code"
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    onSubmit={handleSignIn}
+                    className="space-y-8 pb-2"
                   >
-                    {loading ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Sending<LoadingDots /></>
-                    ) : (
-                      <>Send Verification Code</>
-                    )}
-                  </motion.button>
-                </motion.form>
-              )}
+                    <div className="space-y-6">
+                      <div className="text-center">
+                        <label className="text-xs font-bold uppercase tracking-widest mb-4 block" style={{ color: 'var(--text-muted)' }}>
+                          Enter Secret Code
+                        </label>
+                        <OTPInput value={phoneCode} onChange={setPhoneCode} disabled={loading} />
+                      </div>
 
-              {/* ── Step 2: OTP Code ── */}
-              {step === 'code' && (
-                <motion.form
-                  key="code"
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  onSubmit={handleSignIn}
-                  className="space-y-6"
-                >
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
-                        Verification Code
-                      </label>
-                      <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                        Code sent to <span className="text-[#DBDBDB]/60 font-mono">{phoneNumber}</span>
+                      <p className="text-[14px] text-center font-medium leading-relaxed max-w-[280px] mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                        We sent a 5-digit code to your Telegram app via
+                        <span className="font-mono tracking-wider font-bold block mt-1.5" style={{ color: 'var(--text-primary)' }}>{phoneNumber}</span>
                       </p>
                     </div>
 
-                    <OTPInput value={phoneCode} onChange={setPhoneCode} />
+                    <div className="space-y-4">
+                      <motion.button
+                        type="submit"
+                        disabled={loading || phoneCode.length < 5}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full min-h-[56px] rounded-2xl font-bold text-[15px] tracking-wide
+                          disabled:opacity-60 disabled:cursor-not-allowed
+                          transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-0.5
+                          flex items-center justify-center gap-2 relative overflow-hidden group outline-none
+                          focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_50%,transparent)]"
+                        style={{ background: 'var(--accent-rust)', color: '#FFFFFF' }}
+                      >
+                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {loading ? (
+                          <><Loader2 className="w-5 h-5 animate-spin opacity-80" /> Verifying<LoadingDots /></>
+                        ) : (
+                          'Verify & Proceed'
+                        )}
+                      </motion.button>
 
-                    <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-                      Check your Telegram app for the 5-digit code
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <motion.button
-                      type="submit"
-                      disabled={loading || phoneCode.length < 5}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full h-12 rounded-xl font-semibold text-sm
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-all duration-200 shadow-lg
-                        flex items-center justify-center gap-2 relative overflow-hidden"
-                      style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
-                    >
-                      {loading ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> Verifying<LoadingDots /></>
-                      ) : (
-                        'Verify Code'
-                      )}
-                    </motion.button>
-
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="w-full flex items-center justify-center gap-2 text-sm
-                        transition-colors duration-200 py-2"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Change phone number
-                    </button>
-                  </div>
-                </motion.form>
-              )}
-
-              {/* ── Step 3: 2FA Password ── */}
-              {step === 'password' && (
-                <motion.form
-                  key="password"
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  onSubmit={handleSignIn}
-                  className="space-y-5"
-                >
-                  {/* 2FA shield icon */}
-                  <motion.div
-                    className="flex justify-center"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-[#DBDBDB]/10 border border-[#DBDBDB]/20
-                      flex items-center justify-center">
-                      <Shield className="w-7 h-7 text-[#DBDBDB]" />
-                    </div>
-                  </motion.div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-[#DBDBDB]/60 uppercase tracking-wider">
-                      Two-Factor Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Your 2FA password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoFocus={!embedded}
-                        required
-                        className="w-full h-12 px-3 pr-11 rounded-xl border-2 text-sm
-                          focus:outline-none
-                          transition-all duration-200"
-                        style={{
-                          background: 'var(--bg-input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={e => { e.target.style.borderColor = '#DBDBDB'; e.target.style.boxShadow = '0 0 0 3px rgba(219,219,219,0.10)'; }}
-                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-                      />
                       <button
                         type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6C7883]
-                          hover:text-[#DBDBDB]/60 transition-colors duration-150"
+                        onClick={goBack}
+                        disabled={loading}
+                        className="w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-wide uppercase
+                          transition-colors duration-200 py-2 hover:text-opacity-80 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-50"
+                        style={{ color: 'var(--text-muted)' }}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <ArrowLeft className="w-4 h-4" /> Incorrect number?
                       </button>
                     </div>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Two-step verification is enabled on this account</p>
-                  </div>
+                  </motion.form>
+                )}
 
-                  <div className="space-y-3">
-                    <motion.button
-                      type="submit"
-                      disabled={loading || !password}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full h-12 rounded-xl font-semibold text-sm
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-all duration-200 shadow-lg
-                        flex items-center justify-center gap-2 relative overflow-hidden"
-                      style={{ background: 'var(--accent)', color: 'var(--bg-panel)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
+                {/* ── Step 3: 2FA Password ── */}
+                {step === 'password' && (
+                  <motion.form
+                    key="password"
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    onSubmit={handleSignIn}
+                    className="space-y-7 pb-2"
+                  >
+                    {/* 2FA shield icon */}
+                    <motion.div
+                      className="flex justify-center"
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.1 }}
                     >
-                      {loading ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> Signing in<LoadingDots /></>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </motion.button>
+                      <div className="w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-inner" style={{ background: 'color-mix(in srgb, var(--bg-input) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--border) 40%, transparent)' }}>
+                        <Shield className="w-10 h-10" style={{ color: 'var(--accent-rust)' }} />
+                      </div>
+                    </motion.div>
 
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="w-full flex items-center justify-center gap-2 text-sm
-                        transition-colors duration-200 py-2"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Back to code entry
-                    </button>
-                  </div>
-                </motion.form>
-              )}
-            </AnimatePresence>
+                    <div className="space-y-3">
+                      <label className="text-xs font-bold uppercase tracking-widest pl-1" style={{ color: 'var(--text-muted)' }}>
+                        Two-Factor Password
+                      </label>
+                      <div className="relative shadow-sm rounded-2xl group focus-within:shadow-md transition-shadow">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Your 2FA password"
+                          value={password}
+                          disabled={loading}
+                          onChange={(e) => setPassword(e.target.value)}
+                          autoFocus={!embedded}
+                          required
+                          spellCheck={false}
+                          className="w-full min-h-[56px] px-5 pr-14 rounded-2xl border-2 text-[16px] sm:text-lg font-medium tracking-wide
+                            focus:outline-none transition-all duration-200 placeholder:font-normal placeholder:text-[var(--text-hint)]
+                            disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_25%,transparent)]"
+                          style={{
+                            background: 'color-mix(in srgb, var(--bg-input) 30%, transparent)',
+                            borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+                            color: 'var(--text-primary)',
+                          }}
+                          onFocus={e => { e.target.style.borderColor = 'var(--accent-rust)'; }}
+                          onBlur={e => { e.target.style.borderColor = 'color-mix(in srgb, var(--border) 60%, transparent)'; }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          disabled={loading}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl outline-none
+                            transition-colors duration-150 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-50
+                            focus-visible:ring-2 focus-visible:ring-[var(--accent-rust)]"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      <p className="text-[12px] font-semibold pl-1 h-5 flex items-center gap-2" style={{ color: 'var(--text-hint)' }}>
+                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'currentColor' }} />
+                        Two-step verification is enabled.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <motion.button
+                        type="submit"
+                        disabled={loading || !password}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full min-h-[56px] rounded-2xl font-bold text-[15px] tracking-wide
+                          disabled:opacity-60 disabled:cursor-not-allowed
+                          transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-0.5
+                          flex items-center justify-center gap-2 relative overflow-hidden group outline-none
+                          focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_50%,transparent)]"
+                        style={{ background: 'var(--accent-rust)', color: '#FFFFFF' }}
+                      >
+                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {loading ? (
+                          <><Loader2 className="w-5 h-5 animate-spin opacity-80" /> Unlocking<LoadingDots /></>
+                        ) : (
+                          <>Sign In Securely <Lock className="w-4.5 h-4.5 ml-1 opacity-80" /></>
+                        )}
+                      </motion.button>
+
+                      <button
+                        type="button"
+                        onClick={goBack}
+                        disabled={loading}
+                        className="w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-wide uppercase
+                          transition-colors duration-200 py-2 hover:text-opacity-80 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-50"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        <ArrowLeft className="w-4 h-4" /> Start over
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="px-5 pb-5 sm:px-8 sm:pb-6 text-center">
-            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
-              Secure authentication via Telegram MTProto
+          <div className="px-6 py-4 sm:px-10 sm:py-5 text-center mt-auto backdrop-blur-md" style={{ borderTop: '1px solid color-mix(in srgb, var(--border) 40%, transparent)', background: 'color-mix(in srgb, var(--bg-body) 60%, transparent)' }}>
+            <p className="text-[11px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5 opacity-80" style={{ color: 'var(--text-hint)' }}>
+              <Shield className="w-3.5 h-3.5" /> Secure authentication via Telegram MTProto
             </p>
           </div>
         </div>

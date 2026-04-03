@@ -20,9 +20,25 @@ import { motion, AnimatePresence } from 'motion/react';
 // ── helpers ──────────────────────────────────────────────────────────────────
 const IMAGE_EXTS = ['jpg','jpeg','png','webp','avif','svg','heic','gif','bmp','tiff'];
 const VIDEO_EXTS = ['mp4','mkv','avi','mov','wmv','flv','webm','m4v','3gp'];
+const DOC_EXTS   = ['pdf','doc','docx','ppt','pptx','xls','xlsx','csv','txt','rtf','odt','ods','odp'];
 const getExt = (name: string) => name?.split('.').pop()?.toLowerCase() ?? '';
 const isImg  = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('image/') || IMAGE_EXTS.includes(getExt(f.name)));
 const isVid  = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('video/') || VIDEO_EXTS.includes(getExt(f.name)));
+const isDoc  = (f: FileMetadata) => f.hasDocument && (
+  f.mimeType === 'application/pdf' ||
+  f.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+  f.mimeType === 'application/msword' ||
+  f.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+  f.mimeType === 'application/vnd.ms-powerpoint' ||
+  f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+  f.mimeType === 'application/vnd.ms-excel' ||
+  f.mimeType?.includes('spreadsheet') ||
+  f.mimeType?.includes('presentation') ||
+  f.mimeType === 'text/plain' ||
+  f.mimeType === 'text/csv' ||
+  f.mimeType === 'application/rtf' ||
+  DOC_EXTS.includes(getExt(f.name))
+);
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function Header() {
@@ -66,7 +82,7 @@ export function Header() {
   const totalStorage   = files.reduce((s, f) => s + (f.size || 0), 0);
   const imageCount     = files.filter(isImg).length;
   const videoCount     = files.filter(isVid).length;
-  const documentCount  = files.filter(f => f.hasDocument && !isImg(f) && !isVid(f)).length;
+  const documentCount  = files.filter(isDoc).length;
 
   return (
     <>
