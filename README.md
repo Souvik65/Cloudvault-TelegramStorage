@@ -53,14 +53,14 @@ Storage Vault is a modern web application that turns your Telegram account into 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Souvik65/Cloudvault-Telegram-Storage.git
-cd cloudvault
+git clone https://github.com/Souvik65/StorageVault-TelegramStorage.git
+cd StorageVault-TelegramStorage
 
 # 2. Install dependencies
 npm install
 
 # 3. Configure environment variables (see below)
-cp .env.example .env.local
+.env.local
 
 # 4. Start the development server
 npm run dev
@@ -80,9 +80,7 @@ Create a `.env.local` file in the project root with the following variables:
 TG_API_ID=your_api_id
 TG_API_HASH=your_api_hash
 
-# Optional — Google Gemini API key for AI image analysis
-# Obtain from https://aistudio.google.com/apikey
-GEMINI_API_KEY=your_gemini_api_key
+
 ```
 
 ---
