@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☁️ CloudVault
+# ☁️ Storage Vault
 
 **Unlimited cloud storage powered by Telegram's infrastructure**
 
@@ -18,7 +18,7 @@
 
 ## Overview
 
-CloudVault is a modern web application that turns your Telegram account into a personal cloud drive. Upload, organize, and manage files through a polished dashboard — all stored securely in Telegram's infrastructure, giving you virtually **unlimited storage at no cost**.
+Storage Vault is a modern web application that turns your Telegram account into a personal cloud drive. Upload, organize, and manage files through a polished dashboard — all stored securely in Telegram's infrastructure, giving you virtually **unlimited storage at no cost**.
 
 ---
 
@@ -92,7 +92,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ## How It Works
 
-1. **Login** — Authenticate with your Telegram phone number. CloudVault uses the official Telegram MTProto API via `gram-js`.
+1. **Login** — Authenticate with your Telegram phone number. StorageVault uses the official Telegram MTProto API via `gram-js`.
 2. **Storage channels** — Files are uploaded as messages (with captions containing JSON metadata) to Telegram channels. Your "Saved Messages" is the default channel.
 3. **Folder structure** — Folders are simulated via metadata paths stored in message captions — no server required.
 4. **AI analysis** — Images can be sent to Gemini for analysis directly from the file preview modal.

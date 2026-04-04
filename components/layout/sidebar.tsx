@@ -69,11 +69,11 @@ export function Sidebar() {
       <div className={`flex items-center h-16 shrink-0 border-b ${sidebarCollapsed ? 'justify-center px-0' : 'px-4 gap-3'}`}
         style={{ borderColor: 'var(--border)' }}>
         {/* Logo icon */}
-        <img src="/logo.svg" alt="Cloud Vault" className="w-9 h-9 rounded-xl shadow-lg shrink-0" />
+        <img src="/logo.svg" alt="Storage Vault" className="w-9 h-9 rounded-xl shadow-lg shrink-0" />
         {/* App name (hidden when collapsed) */}
         {!sidebarCollapsed && (
           <div className="flex flex-col overflow-hidden">
-            <span className="text-[15px] font-bold tracking-tight leading-tight whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>Cloud Vault</span>
+            <span className="text-[15px] font-bold tracking-tight leading-tight whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
             <span className="text-[9px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-0.5 tracking-wide uppercase" style={{ background: 'var(--accent-rust)' }}>Beta</span>
           </div>
         )}

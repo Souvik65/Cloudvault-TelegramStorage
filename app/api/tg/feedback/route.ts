@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       `📅 Date: ${dateStr}\n` +
       `⏰ Time: ${timeStr}\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `${priorityTag} #cloudvault`;
+      `${priorityTag} #storagevault`;
 
     const res = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,

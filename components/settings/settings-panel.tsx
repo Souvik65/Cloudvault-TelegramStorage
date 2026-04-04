@@ -142,7 +142,7 @@ export function SettingsPanel() {
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-hint)' }}>Create Channel</h3>
         <div className="flex gap-2">
           <Input
-            placeholder="e.g., CloudVault Storage"
+            placeholder="e.g., StorageVault Storage"
             value={newChannelName}
             onChange={(e) => setNewChannelName(e.target.value)}
           />

@@ -8,7 +8,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Cloud Vault',
+  title: 'Storage Vault',
   description: 'Telegram-powered Cloud Storage',
   icons: {
     icon: '/favicon.ico',

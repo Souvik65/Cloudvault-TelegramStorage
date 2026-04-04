@@ -95,11 +95,12 @@ export default function Home() {
         </div>
 
         {/* LEFT — Hero + features */}
+        {/* @All reight reserved Souvik Debnath 2026  */}
         <div className="relative z-10 min-h-dvh lg:min-h-0 flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 lg:py-20">
           <motion.div className="flex items-center gap-3 mb-10" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
-            <img src="/logo.svg" alt="Cloud Vault" className="w-12 h-12 rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }} />
+            <img src="/logo.svg" alt="Storage Vault" className="w-12 h-12 rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }} />
             <div className="flex flex-col">
-              <span className="text-2xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>Cloud Vault</span>
+              <span className="text-2xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
               <span className="text-[10px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-1 tracking-wide uppercase"
                 style={{ background: 'var(--accent-rust)', border: '1px solid rgba(192,82,42,0.3)' }}>Beta</span>
             </div>

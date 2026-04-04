@@ -102,8 +102,8 @@ export function Header() {
 
         {/* ── Logo (desktop only) ── */}
       <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-        <Image src="/logo.svg" alt="Cloud Vault" width={32} height={32} className="w-8 h-8 rounded-xl shadow-md" />
-        <span className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Cloud Vault</span>
+        <Image src="/logo.svg" alt="Storage Vault" width={32} height={32} className="w-8 h-8 rounded-xl shadow-md" />
+        <span className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
       </div>
 
         {/* ── Mobile search (expanded) ── */}
@@ -113,7 +113,7 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" style={{ color: 'var(--text-hint)' }} />
               <input
                 type="text" autoFocus
-                placeholder="Search in Cloud Vault"
+                placeholder="Search in Storage Vault"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -138,7 +138,7 @@ export function Header() {
                 <Search className="absolute left-4 w-4 h-4 pointer-events-none z-10" style={{ color: 'var(--text-hint)' }} />
                 <input
                   type="text"
-                  placeholder="Search in Cloud Vault"
+                  placeholder="Search in Storage Vault"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}

@@ -650,7 +650,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                 whileHover={{ scale: 1.05, rotate: 2 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               >
-                <Image src="/logo.svg" alt="Cloud Vault" width={80} height={80} className="w-full h-full rounded-[1.5rem] shadow-xl" />
+                <Image src="/logo.svg" alt="Storage Vault" width={80} height={80} className="w-full h-full rounded-[1.5rem] shadow-xl" />
                 {/* Glow ring */}
                 <motion.div
                   className="absolute inset-0 rounded-[1.5rem] pointer-events-none"
@@ -660,7 +660,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                 />
               </motion.div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>CloudVault</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>StorageVault</h1>
               <p className="text-[14px] mt-2 font-semibold tracking-wide" style={{ color: 'var(--text-muted)' }}>Sign in securely using Telegram</p>
             </motion.div>
 

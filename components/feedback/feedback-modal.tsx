@@ -86,7 +86,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         <DialogHeader>
           <DialogTitle>Feedback & Bug Report</DialogTitle>
           <DialogDescription>
-            Help us improve CloudVault by sharing your feedback or reporting a bug.
+            Help us improve StorageVault by sharing your feedback or reporting a bug.
           </DialogDescription>
         </DialogHeader>
 

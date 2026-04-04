@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     const result = await client.invoke(
       new Api.channels.CreateChannel({
         title: name,
-        about: 'CloudVault storage channel',
+        about: 'StorageVault storage channel',
         megagroup: false,
       })
     );
