@@ -13,6 +13,7 @@ import {
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen,
   Filter
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { formatSize } from '@/lib/utils';
 
 export function Sidebar() {
@@ -62,8 +63,13 @@ export function Sidebar() {
   const userInitial = user?.firstName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className={`relative flex flex-col h-full z-10 border-r shrink-0 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-[68px]' : 'w-64'}`}
-      style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}>
+    <motion.div 
+      className="relative flex flex-col h-full z-10 border-r shrink-0"
+      initial={false}
+      animate={{ width: sidebarCollapsed ? 68 : 256 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}
+    >
 
       {/* Header area */}
       <div className={`flex items-center h-16 shrink-0 border-b ${sidebarCollapsed ? 'justify-center px-0' : 'px-4 gap-3'}`}
@@ -71,12 +77,19 @@ export function Sidebar() {
         {/* Logo icon */}
         <img src="/logo.svg" alt="Storage Vault" className="w-9 h-9 rounded-xl shadow-lg shrink-0" />
         {/* App name (hidden when collapsed) */}
-        {!sidebarCollapsed && (
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-[15px] font-bold tracking-tight leading-tight whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
-            <span className="text-[9px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-0.5 tracking-wide uppercase" style={{ background: 'var(--accent-rust)' }}>Beta</span>
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              className="flex flex-col overflow-hidden whitespace-nowrap"
+            >
+              <span className="text-[15px] font-bold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
+              <span className="text-[9px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-0.5 tracking-wide uppercase" style={{ background: 'var(--accent-rust)' }}>Beta</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Collapse toggle button - desktop only */}
@@ -94,9 +107,18 @@ export function Sidebar() {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3">
         {/* Section label */}
-        {!sidebarCollapsed && (
-          <p className="px-4 text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-hint)' }}>Navigation</p>
-        )}
+        <AnimatePresence initial={false}>
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <p className="px-4 text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-hint)' }}>Navigation</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="space-y-0.5 px-2">
           {navItems.map(({ id, label, icon: Icon, action, badge }) => (
@@ -113,18 +135,42 @@ export function Sidebar() {
               onMouseLeave={(e) => { if (activeSection !== id) { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; } }}
             >
               <Icon className={`shrink-0 transition-all ${sidebarCollapsed ? 'w-5 h-5' : 'w-4 h-4'}`} />
-              {!sidebarCollapsed && (
-                <span className="text-sm font-medium flex-1 text-left whitespace-nowrap">{label}</span>
-              )}
-              {!sidebarCollapsed && badge !== undefined && (
-                <span className="text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none"
-                  style={{ background: 'var(--accent-rust-tint)', color: 'var(--accent-rust)' }}>
-                  {badge}
-                </span>
-              )}
-              {sidebarCollapsed && badge !== undefined && (
-                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style={{ background: 'var(--accent-rust)' }} />
-              )}
+              <AnimatePresence initial={false}>
+                {!sidebarCollapsed && (
+                  <motion.span
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    className="text-sm font-medium flex-1 text-left whitespace-nowrap overflow-hidden"
+                  >
+                    {label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false}>
+                {!sidebarCollapsed && badge !== undefined && (
+                  <motion.span
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="text-[10px] shrink-0 font-semibold rounded-full px-1.5 py-0.5 leading-none overflow-hidden"
+                    style={{ background: 'var(--accent-rust-tint)', color: 'var(--accent-rust)' }}
+                  >
+                    {badge}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false}>
+                {sidebarCollapsed && badge !== undefined && (
+                  <motion.span
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full"
+                    style={{ background: 'var(--accent-rust)' }}
+                  />
+                )}
+              </AnimatePresence>
               {/* Active indicator */}
               {activeSection === id && (
                 <span className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full" style={{ background: 'var(--accent-rust)' }} />
@@ -148,7 +194,18 @@ export function Sidebar() {
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-hint)'; e.currentTarget.style.background = 'transparent'; }}
           >
             <Settings className={`shrink-0 ${sidebarCollapsed ? 'w-5 h-5' : 'w-4 h-4'}`} />
-            {!sidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">Settings</span>}
+            <AnimatePresence initial={false}>
+              {!sidebarCollapsed && (
+                <motion.span
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 'auto', opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                >
+                  Settings
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
 
           <button
@@ -161,7 +218,18 @@ export function Sidebar() {
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-hint)'; e.currentTarget.style.background = 'transparent'; }}
           >
             <MessageSquare className={`shrink-0 ${sidebarCollapsed ? 'w-5 h-5' : 'w-4 h-4'}`} />
-            {!sidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">Feedback</span>}
+            <AnimatePresence initial={false}>
+              {!sidebarCollapsed && (
+                <motion.span
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 'auto', opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                >
+                  Feedback
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
 
           {/* Theme toggle */}
@@ -169,65 +237,72 @@ export function Sidebar() {
         </div>
 
         {/* Storage section */}
-        {!sidebarCollapsed && (
-          <>
-            <div className="my-3 mx-4 border-t" style={{ borderColor: 'var(--border)' }} />
-            <div className="px-4">
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-hint)' }}>Storage</p>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span style={{ color: 'var(--text-muted)' }}>Used</span>
-                    <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalStorageFormatted}</span>
-                  </div>
-                  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                    <div className="h-full rounded-full w-full" style={{ background: 'var(--text-primary)' }} />
-                  </div>
-                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-hint)' }}>Unlimited via Telegram</p>
-                </div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>All Files</p>
-                <div className="space-y-2">
-                  <div 
-                    onClick={() => { setActiveSection('my-files'); setFilterType('image'); setFilterGlobal(true); closeSidebarOnMobile(); }}
-                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
-                  >
-                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      <ImageIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Images
+        <AnimatePresence initial={false}>
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="my-3 mx-4 border-t" style={{ borderColor: 'var(--border)' }} />
+              <div className="px-4 pb-2">
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-hint)' }}>Storage</p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span style={{ color: 'var(--text-muted)' }}>Used</span>
+                      <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalStorageFormatted}</span>
                     </div>
-                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{images}</span>
-                  </div>
-                  <div 
-                    onClick={() => { setActiveSection('my-files'); setFilterType('video'); setFilterGlobal(true); closeSidebarOnMobile(); }}
-                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
-                  >
-                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      <Video className="w-3.5 h-3.5" style={{ color: 'var(--accent-teal)' }} /> Videos
+                    <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                      <div className="h-full rounded-full w-full" style={{ background: 'var(--text-primary)' }} />
                     </div>
-                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{videos}</span>
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-hint)' }}>Unlimited via Telegram</p>
                   </div>
-                  <div 
-                    onClick={() => { setActiveSection('my-files'); setFilterType('document'); setFilterGlobal(true); closeSidebarOnMobile(); }}
-                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
-                  >
-                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      <FileText className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Documents
+                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>All Files</p>
+                  <div className="space-y-2">
+                    <div 
+                      onClick={() => { setActiveSection('my-files'); setFilterType('image'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                      className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                    >
+                      <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        <ImageIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Images
+                      </div>
+                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'image' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{images}</span>
                     </div>
-                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{documents}</span>
-                  </div>
-                  <div 
-                    onClick={() => { setActiveSection('my-files'); setFilterType('other'); setFilterGlobal(true); closeSidebarOnMobile(); }}
-                    className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
-                  >
-                    <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      <Filter className="w-3.5 h-3.5" style={{ color: 'var(--text-hint)' }} /> Others
+                    <div 
+                      onClick={() => { setActiveSection('my-files'); setFilterType('video'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                      className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                    >
+                      <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        <Video className="w-3.5 h-3.5" style={{ color: 'var(--accent-teal)' }} /> Videos
+                      </div>
+                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'video' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{videos}</span>
                     </div>
-                    <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{files.filter(f => f.hasDocument).length - images - videos - documents}</span>
+                    <div 
+                      onClick={() => { setActiveSection('my-files'); setFilterType('document'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                      className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                    >
+                      <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        <FileText className="w-3.5 h-3.5" style={{ color: 'var(--accent-rust)' }} /> Documents
+                      </div>
+                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'document' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{documents}</span>
+                    </div>
+                    <div 
+                      onClick={() => { setActiveSection('my-files'); setFilterType('other'); setFilterGlobal(true); closeSidebarOnMobile(); }}
+                      className="flex items-center justify-between cursor-pointer group rounded px-2 -mx-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                    >
+                      <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        <Filter className="w-3.5 h-3.5" style={{ color: 'var(--text-hint)' }} /> Others
+                      </div>
+                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{files.filter(f => f.hasDocument).length - images - videos - documents}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* User profile footer */}
@@ -242,22 +317,29 @@ export function Sidebar() {
               {userInitial}
             </div>
           )}
-          {!sidebarCollapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>{user?.firstName} {user?.lastName}</p>
-                <p className="text-[11px] truncate" style={{ color: 'var(--text-hint)' }}>@{user?.username || user?.phone}</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={logout} className="shrink-0 w-7 h-7"
-                style={{ color: 'var(--text-hint)' }}>
-                <LogOut className="w-3.5 h-3.5" />
-              </Button>
-            </>
-          )}
+          <AnimatePresence initial={false}>
+            {!sidebarCollapsed && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 'auto', opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="flex flex-1 items-center justify-between overflow-hidden whitespace-nowrap min-w-0"
+              >
+                <div className="flex flex-col min-w-0 pr-2">
+                  <p className="text-[13px] font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>{user?.firstName} {user?.lastName}</p>
+                  <p className="text-[11px] truncate" style={{ color: 'var(--text-hint)' }}>@{user?.username || user?.phone}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={logout} className="shrink-0 w-7 h-7"
+                  style={{ color: 'var(--text-hint)' }}>
+                  <LogOut className="w-3.5 h-3.5" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </div>
+    </motion.div>
   );
 }

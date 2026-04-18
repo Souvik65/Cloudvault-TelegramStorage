@@ -249,20 +249,23 @@ export function Header() {
                   )}
                 </button>
 
-                {/* ── Mobile profile dropdown (sm:hidden) ── */}
                 <AnimatePresence>
                   {profileOpen && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                      transition={{ duration: 0.15 }}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      variants={{
+                        hidden: { opacity: 0, scale: 0.95, y: -6 },
+                        visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.15, staggerChildren: 0.05 } },
+                        exit: { opacity: 0, scale: 0.95, y: -6, transition: { duration: 0.1 } }
+                      }}
                       className="sm:hidden absolute right-0 top-11 w-72 rounded-2xl border shadow-2xl overflow-hidden z-50"
                       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                       onClick={e => e.stopPropagation()}
                     >
                       {/* User info */}
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <motion.div variants={{ hidden: { opacity: 0, y: 5 }, visible: { opacity: 1, y: 0 } }} className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
                         <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0 shadow-lg`}
                           style={!authUser?.profilePhoto ? { background: `linear-gradient(135deg, var(--accent-rust), var(--accent-rust-deep))` } : {}}>
                           {authUser?.profilePhoto ? (
@@ -287,10 +290,10 @@ export function Header() {
                         >
                           <LogOut className="w-4 h-4" />
                         </button>
-                      </div>
+                      </motion.div>
 
                       {/* Storage */}
-                      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <motion.div variants={{ hidden: { opacity: 0, y: 5 }, visible: { opacity: 1, y: 0 } }} className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
                         <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--text-hint)' }}>Storage</p>
 
                         {/* Bar */}
@@ -302,10 +305,10 @@ export function Header() {
                           <div className="h-full rounded-full w-full" style={{ background: 'var(--text-primary)' }} />
                         </div>
                         <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-hint)' }}>Unlimited via Telegram</p>
-                      </div>
+                      </motion.div>
 
                       {/* File type breakdown */}
-                      <div className="px-4 py-3 space-y-2.5">
+                      <motion.div variants={{ hidden: { opacity: 0, y: 5 }, visible: { opacity: 1, y: 0 } }} className="px-4 py-3 space-y-2.5">
                         <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text-hint)' }}>File Types</p>
 
                         <div className="flex items-center justify-between">
@@ -337,7 +340,7 @@ export function Header() {
                           </div>
                           <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>{documentCount}</span>
                         </div>
-                      </div>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>

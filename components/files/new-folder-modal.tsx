@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, Variants } from 'motion/react';
 import { useFileStore } from '@/store/use-file-store';
 import { useAuthStore } from '@/store/use-auth-store';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', damping: 20, stiffness: 300 } }
+};
 
 export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [folderName, setFolderName] = useState('');
@@ -88,24 +94,32 @@ export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <Input
-            placeholder="Folder name"
-            value={folderName}
-            onChange={(e) => setFolderName(e.target.value)}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreateFolder();
-            }}
-          />
-        </div>
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } }
+          }}
+        >
+          <motion.div variants={itemVariants} className="space-y-4 py-4">
+            <Input
+              placeholder="Folder name"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreateFolder();
+              }}
+            />
+          </motion.div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={creating}>Cancel</Button>
-          <Button onClick={handleCreateFolder} disabled={creating || !folderName.trim()}>
-            {creating ? 'Creating...' : 'Create Folder'}
-          </Button>
-        </div>
+          <motion.div variants={itemVariants} className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={onClose} disabled={creating}>Cancel</Button>
+            <Button onClick={handleCreateFolder} disabled={creating || !folderName.trim()}>
+              {creating ? 'Creating...' : 'Create Folder'}
+            </Button>
+          </motion.div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

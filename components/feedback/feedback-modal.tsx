@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, Variants } from 'motion/react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,11 @@ import { toast } from 'sonner';
 import { Bug, MessageSquare, Send, Loader2 } from 'lucide-react';
 
 type FeedbackType = 'feedback' | 'bug';
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', damping: 20, stiffness: 300 } }
+};
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -90,9 +96,17 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <motion.form 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } }
+          }}
+        >
           {/* Type selector */}
-          <div className="space-y-2">
+          <motion.div variants={itemVariants} className="space-y-2">
             <Label style={{ color: 'var(--text-hint)' }}>Type</Label>
             <div className="flex gap-2">
               <button
@@ -118,10 +132,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 Report Bug
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Subject */}
-          <div className="space-y-2">
+          <motion.div variants={itemVariants} className="space-y-2">
             <Label htmlFor="subject" style={{ color: 'var(--text-hint)' }}>Subject</Label>
             <Input
               id="subject"
@@ -130,10 +144,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               onChange={(e) => setSubject(e.target.value)}
               maxLength={100}
             />
-          </div>
+          </motion.div>
 
           {/* Description */}
-          <div className="space-y-2">
+          <motion.div variants={itemVariants} className="space-y-2">
             <Label htmlFor="description" style={{ color: 'var(--text-hint)' }}>Description</Label>
             <textarea
               id="description"
@@ -154,10 +168,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               }}
             />
             <p className="text-xs text-right" style={{ color: 'var(--text-hint)' }}>{description.length}/1000</p>
-          </div>
+          </motion.div>
 
           {/* Submit */}
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+          <motion.div variants={itemVariants} className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -180,8 +194,8 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               )}
               {isSubmitting ? 'Submitting...' : 'Submit'}
             </Button>
-          </div>
-        </form>
+          </motion.div>
+        </motion.form>
       </DialogContent>
     </Dialog>
   );

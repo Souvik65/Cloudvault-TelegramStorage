@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { FileCardSkeleton, FileRowSkeleton } from '@/components/ui/skeleton';
 import { FileListView } from '@/components/files/file-list-view';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { format } from 'date-fns';
 import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -94,6 +95,9 @@ export function FileList() {
   const [uploadQueue, setUploadQueue] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemsToDelete, setItemsToDelete] = useState<number[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const lastSelectedId = useRef<number | null>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -344,11 +348,16 @@ export function FileList() {
     return [...folders, ...sorted];
   }, [files, currentFolder, searchQuery, filterType, filterGlobal, storageChannelName, sortBy, sortDir, activeSection, starred]);
 
-  const handleDelete = async (ids: number[]) => {
-    if (!confirm(`Delete ${ids.length > 1 ? `${ids.length} items` : 'this item'}?`)) return;
+  const confirmDelete = (ids: number[]) => {
+    setItemsToDelete(ids);
+    setDeleteModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
     try {
-      let allIds = [...ids];
-      const selectedFolders = files.filter(f => ids.includes(f.id) && !f.hasDocument && f.mimeType === 'folder');
+      let allIds = [...itemsToDelete];
+      const selectedFolders = files.filter(f => itemsToDelete.includes(f.id) && !f.hasDocument && f.mimeType === 'folder');
       for (const folder of selectedFolders) {
         const fp = currentFolder === '/' ? `/${folder.name}` : `${currentFolder}/${folder.name}`;
         const inner = files.filter(f => f.folderPath === fp || f.folderPath?.startsWith(`${fp}/`));
@@ -362,7 +371,11 @@ export function FileList() {
       setFiles(files.filter(f => !allIds.includes(f.id)));
       clearSelection();
       toast.success('Deleted successfully');
-    } catch (e: any) { toast.error(e.message); }
+      setDeleteModalOpen(false);
+    } catch (e: any) { toast.error(e.message); } finally {
+      setIsDeleting(false);
+      setItemsToDelete([]);
+    }
   };
 
   const handleDownload = async (file: any) => {
@@ -591,7 +604,7 @@ export function FileList() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-hint)' }}>{selectedFiles.length} selected</span>
                   <button
-                    onClick={() => handleDelete(selectedFiles)}
+                    onClick={() => confirmDelete(selectedFiles)}
                     className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg transition-colors font-medium"
                     style={{ color: 'var(--accent-rust)' }}
                   >
@@ -621,7 +634,7 @@ export function FileList() {
                       initial={{ opacity: 0, scale: 0.95, y: -4 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                      transition={{ duration: 0.12 }}
+                      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                       className="absolute right-0 mt-1.5 w-48 rounded-xl border shadow-lg overflow-hidden z-30 py-1"
                       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                       onClick={e => e.stopPropagation()}
@@ -813,7 +826,7 @@ export function FileList() {
               selectedFiles={selectedFiles}
               onFileClick={handleFileClick}
               onDownload={handleDownload}
-              onDelete={handleDelete}
+              onDelete={confirmDelete}
               onPreview={handlePreview}
               onThreeDot={handleThreeDot}
               showPath={!!searchQuery}
@@ -830,7 +843,7 @@ export function FileList() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.1 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed z-[100] rounded-xl border shadow-lg overflow-hidden py-1 w-52"
             style={{
               background: 'var(--bg-card)',
@@ -881,7 +894,7 @@ export function FileList() {
                 style={{ color: 'var(--accent-rust)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-rust-tint)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                onClick={() => { handleDelete([contextFile.id]); setDropdown(null); }}
+                onClick={() => { confirmDelete([contextFile.id]); setDropdown(null); }}
               >
                 <Trash2 className="w-4 h-4" /> Delete
               </button>
@@ -889,6 +902,19 @@ export function FileList() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={executeDelete}
+        title={itemsToDelete.length > 1 ? `Delete ${itemsToDelete.length} items?` : 'Delete this item?'}
+        description={itemsToDelete.length > 1 
+          ? "Are you sure you want to delete these files? This action cannot be undone."
+          : "Are you sure you want to delete this file? This action cannot be undone."}
+        confirmText="Delete"
+        isPending={isDeleting}
+      />
 
       {/* Preview dialog */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && closePreview()}>

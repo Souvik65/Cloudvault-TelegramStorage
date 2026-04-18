@@ -55,11 +55,18 @@ export function ThemeToggle({ collapsed }: ThemeToggleProps) {
           )}
         </AnimatePresence>
       </div>
-      {!collapsed && (
-        <span className="text-sm font-medium whitespace-nowrap">
-          {isDark ? 'Light Mode' : 'Dark Mode'}
-        </span>
-      )}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.span
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 'auto', opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="text-sm font-medium whitespace-nowrap overflow-hidden"
+          >
+            {isDark ? 'Light Mode' : 'Dark Mode'}
+          </motion.span>
+        )}      </AnimatePresence>
     </button>
   );
 }
