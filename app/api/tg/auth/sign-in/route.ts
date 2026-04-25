@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { TelegramClient, Api } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import { setSessionCookie } from '@/lib/session-cookie';
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 5, requestRetries: 3 });
-    client.setLogLevel("none" as any);
+    client.setLogLevel('none' as any);
     try {
       await client.connect();
 
@@ -40,7 +41,10 @@ export async function POST(req: Request) {
       }
 
       const newSessionString = client.session.save() as unknown as string;
-      return NextResponse.json({ sessionString: newSessionString });
+
+      // Set the session as an HttpOnly cookie — never exposed to client-side JS
+      const res = NextResponse.json({ success: true });
+      return setSessionCookie(res, newSessionString);
     } finally {
       try { await client.disconnect(); } catch {}
     }

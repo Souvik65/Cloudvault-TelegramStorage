@@ -87,8 +87,8 @@
   --sand-500: #666666;
 
   /* Accent Colors (slightly brighter for contrast) */
-  --accent-rust:        #E06B42;
-  --accent-rust-deep:   #C0522A;
+  --accent-rust:        #C0522A;
+  --accent-rust-deep:   #A03F20;
   --accent-rust-tint:   #2A1F1A;
   --accent-rust-border: #5A3828;
 

@@ -14,19 +14,19 @@ import { RightPanel } from '@/components/layout/right-panel';
 import { SettingsPanel } from '@/components/settings/settings-panel';
 import { FileDetailsPanel } from '@/components/files/file-details-panel';
 import { Toaster } from 'sonner';
+import Image from 'next/image';
 
 export default function Home() {
-  const { sessionString, user, setUser, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const { rightPanelOpen, closeRightPanel, sidebarOpen, setSidebarOpen } = useUIStore();
   const { theme } = useThemeStore();
 
+  // On mount, if we have a stored user already we skip the fetch.
+  // If not, try to fetch from the server (cookie is sent automatically).
   useEffect(() => {
-    if (!sessionString || user) return;
+    if (user) return;
     const controller = new AbortController();
-    fetch('/api/tg/user', {
-      headers: { 'x-tg-session': sessionString },
-      signal: controller.signal,
-    })
+    fetch('/api/tg/user', { signal: controller.signal })
       .then(async (res) => {
         const data = await res.json();
         if (!data.error) { setUser(data); }
@@ -34,7 +34,7 @@ export default function Home() {
       })
       .catch((err) => { if (err.name !== 'AbortError') console.error('Failed to fetch user:', err); });
     return () => controller.abort();
-  }, [sessionString, user, setUser, logout]);
+  }, [user, setUser, logout]);
 
   const rightPanelTitle = rightPanelOpen === 'settings' ? 'Settings' : rightPanelOpen === 'file-details' ? 'File Details' : '';
 
@@ -43,19 +43,19 @@ export default function Home() {
   const loginSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (sessionString) return;
+    if (user) return;
     window.scrollTo(0, 0);
     const onScroll = () => { if (window.scrollY > 80) setShowScrollHint(false); };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [sessionString]);
+  }, [user]);
 
   const scrollToLogin = () => {
     setShowScrollHint(false);
     loginSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (!sessionString) {
+  if (!user) {
     const features = [
       { icon: InfinityIcon, color: 'var(--accent-rust)', title: 'Unlimited Storage', desc: 'There is no storage cap. Store as much as you want, completely free.' },
       { icon: FolderOpen,   color: 'var(--accent-teal)', title: 'Folder Organisation', desc: 'Create nested folders and keep all your files neatly structured.' },
@@ -95,10 +95,17 @@ export default function Home() {
         </div>
 
         {/* LEFT — Hero + features */}
-        {/* @All reight reserved Souvik Debnath 2026  */}
+        {/* @All rights reserved Souvik Debnath 2026  */}
         <div className="relative z-10 min-h-dvh lg:min-h-0 flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 lg:py-20">
           <motion.div className="flex items-center gap-3 mb-10" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
-            <img src="/logo.svg" alt="Storage Vault" className="w-12 h-12 rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }} />
+            <Image
+              src="/logo.svg"
+              alt="Storage Vault"
+              width={48}
+              height={48}
+              className="rounded-2xl shadow-lg"
+              style={{ boxShadow: "0 4px 12px rgba(192,82,42,0.2)" }}
+            />
             <div className="flex flex-col">
               <span className="text-2xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
               <span className="text-[10px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-1 tracking-wide uppercase"

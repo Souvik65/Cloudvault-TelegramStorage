@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getClient } from '@/lib/tg-client';
 import { Api } from 'telegram';
+import { getSessionFromRequest } from '@/lib/session-cookie';
 
 export async function GET(req: Request) {
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -36,6 +37,9 @@ export async function GET(req: Request) {
           await client.getDialogs({ limit: 200 });
           peer = await client.getInputEntity(channelId as any);
         } catch (e2: any) {
+          if (e2?.message?.includes('AUTH_KEY_UNREGISTERED') || e2?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+            throw e2;
+          }
           return NextResponse.json(
             { error: `Channel not found: ${e2?.message ?? channelId}` },
             { status: 404 }
@@ -141,7 +145,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -209,7 +213,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

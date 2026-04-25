@@ -503,7 +503,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [direction, setDirection] = useState(1);
 
-  const { setSession, setUser } = useAuthStore();
+  const { setUser } = useAuthStore();
   const hasAutoSubmittedRef = useRef(false);
 
   // Combine country code + local number into full international format
@@ -571,13 +571,12 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
         return;
       }
 
-      setSession(data.sessionString);
 
-      const userRes = await fetch('/api/tg/user', {
-        headers: { 'x-tg-session': data.sessionString },
-      });
-      const userData = await userRes.json();
-      if (!userData.error) setUser(userData);
+      const userRes = await fetch('/api/tg/user');
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        if (!userData.error) setUser(userData);
+      }
 
       toast.success('Successfully signed in');
     } catch (error: any) {
@@ -585,7 +584,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
     } finally {
       setLoading(false);
     }
-  }, [phoneNumber, phoneCodeHash, phoneCode, password, sessionString, step, setSession, setUser]);
+  }, [phoneNumber, phoneCodeHash, phoneCode, password, sessionString, step, setUser]);
 
   // Auto-submit when OTP is fully filled
   useEffect(() => {
@@ -660,7 +659,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                 />
               </motion.div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>StorageVault</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>Storage Vault</h1>
               <p className="text-[14px] mt-2 font-semibold tracking-wide" style={{ color: 'var(--text-muted)' }}>Sign in securely using Telegram</p>
             </motion.div>
 

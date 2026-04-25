@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getClient } from '@/lib/tg-client';
 import { Api } from 'telegram';
+import { getSessionFromRequest } from '@/lib/session-cookie';
 
 export async function GET(req: Request) {
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
