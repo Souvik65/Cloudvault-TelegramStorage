@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, Variants } from 'motion/react';
 import { useFileStore } from '@/store/use-file-store';
-import { useAuthStore } from '@/store/use-auth-store';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,6 @@ export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [folderName, setFolderName] = useState('');
   const [creating, setCreating] = useState(false);
   const { currentFolder, setFiles, files, storageChannelId } = useFileStore();
-  const { sessionString } = useAuthStore();
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) return;
@@ -56,7 +54,6 @@ export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
       const res = await fetch('/api/tg/files', {
         method: 'POST',
-        headers: { 'x-tg-session': sessionString! },
         body: formData,
       });
 
@@ -70,9 +67,7 @@ export function NewFolderModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
       onClose();
 
       // Refresh files
-      const refreshRes = await fetch(`/api/tg/files?channelId=${storageChannelId}`, {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const refreshRes = await fetch(`/api/tg/files?channelId=${storageChannelId}`);
       const data = await refreshRes.json();
       if (!data.error) {
         setFiles(data.files);

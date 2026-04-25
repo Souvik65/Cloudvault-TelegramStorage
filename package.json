@@ -1,6 +1,6 @@
 {
   "name": "storage_vault",
-  "version": "0.2.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -22,10 +22,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.4.1",
     "lucide-react": "^0.553.0",
     "mammoth": "^1.11.0",
     "motion": "^12.23.24",
-    "next": "^15.4.9",
+    "next": "^16.2.4",
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
@@ -33,11 +34,13 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "telegram": "^2.26.22",
+    "uuid": "^14.0.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.11",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

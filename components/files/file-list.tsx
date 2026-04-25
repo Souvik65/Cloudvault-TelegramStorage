@@ -20,6 +20,8 @@ import { format } from 'date-fns';
 import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
+import Image from 'next/image';
+import DOMPurify from 'dompurify';
 
 const TELEGRAM_DIRECT_PATH = '/__tg_direct__';
 const VIRTUAL_FOLDER_ID = -1;
@@ -33,16 +35,10 @@ interface DropdownState {
   buttonBottom: number; // viewport bottom edge of the button
 }
 
+
+// Sanitize HTML using DOMPurify (allow-list based, immune to novel XSS vectors)
 function sanitizeHtml(html: string): string {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  div.querySelectorAll('script,iframe,style,link,object,embed,form,base').forEach(el => el.remove());
-  div.querySelectorAll('*').forEach(el => {
-    Array.from(el.attributes).forEach(attr => {
-      if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
-    });
-  });
-  return div.innerHTML;
+  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
@@ -80,7 +76,6 @@ function getFileIcon(mimeType: string, name: string, size: 'sm' | 'md' | 'lg' = 
 
 export function FileList() {
   const { files, setFiles, currentFolder, setCurrentFolder, searchQuery, filterType, setFilterType, filterGlobal, setFilterGlobal, isLoading, setLoading, setError, storageChannelId, storageChannelName } = useFileStore();
-  const { sessionString } = useAuthStore();
   const { viewMode, openRightPanel, setSelectedFileForDetails, sortBy, setSortBy, starred, toggleStarred, activeSection, setActiveSection } = useUIStore();
   const [selectedFiles, setSelectedFiles] = useState<number[]>([]);
   const [previewFile, setPreviewFile] = useState<any | null>(null);
@@ -159,7 +154,6 @@ export function FileList() {
     try {
       if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
       const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
-        headers: { 'x-tg-session': sessionString! },
         signal: controller.signal,
       });
       if (!res.ok) throw new Error('Failed to load preview');
@@ -189,13 +183,13 @@ export function FileList() {
     setDocxHtml(null);
   };
 
-  // Fetch files
+  // Fetch files whenever the storage channel changes (auth via HttpOnly cookie)
   useEffect(() => {
-    if (!sessionString) return;
+    if (!storageChannelId) return;
     const fetchFiles = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`, { headers: { 'x-tg-session': sessionString } });
+        const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`);
         if (res.status === 401) {
           useAuthStore.getState().logout();
           return;
@@ -209,7 +203,7 @@ export function FileList() {
       } finally { setLoading(false); }
     };
     fetchFiles();
-  }, [sessionString, setFiles, setLoading, setError, storageChannelId]);
+  }, [setFiles, setLoading, setError, storageChannelId]);
 
   // Drag-and-drop upload
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -229,14 +223,13 @@ export function FileList() {
         formData.append('channelId', storageChannelId);
         const res = await fetch('/api/tg/files', {
           method: 'POST',
-          headers: { 'x-tg-session': sessionString! },
           body: formData,
         });
         if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Upload failed'); }
         setUploadProgress(((i + 1) / acceptedFiles.length) * 100);
       }
       toast.success(`${acceptedFiles.length} file${acceptedFiles.length > 1 ? 's' : ''} uploaded`);
-      const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`, { headers: { 'x-tg-session': sessionString! } });
+      const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`);
       const data = await res.json();
       if (!data.error) setFiles(data.files);
     } catch (err: any) {
@@ -245,7 +238,7 @@ export function FileList() {
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [currentFolder, sessionString, storageChannelId, setFiles]);
+  }, [currentFolder, storageChannelId, setFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -365,7 +358,7 @@ export function FileList() {
       }
       allIds = Array.from(new Set(allIds));
       const res = await fetch(`/api/tg/files?channelId=${storageChannelId}&messageIds=${allIds.join(',')}`, {
-        method: 'DELETE', headers: { 'x-tg-session': sessionString! },
+        method: 'DELETE',
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Delete failed'); }
       setFiles(files.filter(f => !allIds.includes(f.id)));
@@ -380,9 +373,7 @@ export function FileList() {
 
   const handleDownload = async (file: any) => {
     try {
-      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -937,7 +928,14 @@ export function FileList() {
                 <p>Loading preview...</p>
               </div>
             ) : previewType === 'image' && previewUrl ? (
-              <img src={previewUrl} alt={previewFile?.name} className="max-w-full max-h-full object-contain rounded-lg" />
+              <Image
+                src={previewUrl}
+                alt={previewFile?.name || "Preview"}
+                width={500}
+                height={500}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                unoptimized={true}
+              />
             ) : previewType === 'video' && previewUrl ? (
               <video src={previewUrl} controls autoPlay className="max-w-full max-h-full rounded-lg" style={{ maxHeight: 'calc(90vh - 2rem)' }} />
             ) : previewType === 'pdf' && previewUrl ? (

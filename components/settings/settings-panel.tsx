@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { Plus, Check } from 'lucide-react';
 
 export function SettingsPanel() {
-  const { sessionString } = useAuthStore();
   const { storageChannelId, setStorageChannelId, setStorageChannelName, setFiles, setCurrentFolder } = useFileStore();
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,9 +18,7 @@ export function SettingsPanel() {
   const fetchChannels = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/tg/channels', {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const res = await fetch('/api/tg/channels');
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setChannels(data.channels || []);
@@ -30,13 +27,11 @@ export function SettingsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [sessionString]);
+  }, []);
 
   useEffect(() => {
-    if (sessionString) {
-      fetchChannels();
-    }
-  }, [sessionString, fetchChannels]);
+    fetchChannels();
+  }, [fetchChannels]);
 
   const handleCreateChannel = async () => {
     if (!newChannelName.trim()) return;
@@ -44,10 +39,7 @@ export function SettingsPanel() {
     try {
       const res = await fetch('/api/tg/channels', {
         method: 'POST',
-        headers: {
-          'x-tg-session': sessionString!,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newChannelName }),
       });
       const data = await res.json();
@@ -74,9 +66,7 @@ export function SettingsPanel() {
 
     // Refresh files for the new channel
     try {
-      const res = await fetch(`/api/tg/files?channelId=${channelId}`, {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const res = await fetch(`/api/tg/files?channelId=${channelId}`);
       const data = await res.json();
       if (!data.error) {
         setFiles(data.files);

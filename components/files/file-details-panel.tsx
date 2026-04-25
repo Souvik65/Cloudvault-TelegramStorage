@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, Variants } from 'motion/react';
 import { useFileStore, FileMetadata } from '@/store/use-file-store';
-import { useAuthStore } from '@/store/use-auth-store';
 import { useUIStore } from '@/store/use-ui-store';
 import { Button } from '@/components/ui/button';
 import { Download, Trash2, Eye, Folder, FileIcon, Image as ImageIcon, Video, FileText, FileAudio, FileArchive, FileCode, FileSpreadsheet, FileJson } from 'lucide-react';
@@ -32,7 +31,6 @@ const itemVariants: Variants = {
 
 export function FileDetailsPanel() {
   const { files, storageChannelId, setFiles } = useFileStore();
-  const { sessionString } = useAuthStore();
   const { selectedFileForDetails, closeRightPanel } = useUIStore();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -50,9 +48,7 @@ export function FileDetailsPanel() {
 
   const handleDownload = async () => {
     try {
-      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`);
       if (!res.ok) throw new Error('Failed to download file');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -77,7 +73,6 @@ export function FileDetailsPanel() {
     try {
       const res = await fetch(`/api/tg/files?channelId=${storageChannelId}&messageIds=${file.id}`, {
         method: 'DELETE',
-        headers: { 'x-tg-session': sessionString! },
       });
       if (!res.ok) {
         const data = await res.json();

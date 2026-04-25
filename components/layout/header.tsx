@@ -43,7 +43,7 @@ const isDoc  = (f: FileMetadata) => f.hasDocument && (
 
 export function Header() {
   const { searchQuery, setSearchQuery, storageChannelId, setFiles, setLoading, files } = useFileStore();
-  const { sessionString, user: authUser, logout } = useAuthStore();
+  const { user: authUser, logout } = useAuthStore();
   const { toggleSidebar, viewMode, setViewMode } = useUIStore();
 
   const [isUploadOpen,    setIsUploadOpen]    = useState(false);
@@ -69,7 +69,7 @@ export function Header() {
   const handleSync = async () => {
     setIsSyncing(true); setLoading(true);
     try {
-      const res  = await fetch(`/api/tg/files?channelId=${storageChannelId}`, { headers: { 'x-tg-session': sessionString! } });
+      const res  = await fetch(`/api/tg/files?channelId=${storageChannelId}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setFiles(data.files);

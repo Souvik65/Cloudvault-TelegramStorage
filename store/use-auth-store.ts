@@ -11,9 +11,7 @@ export interface TelegramUser {
 }
 
 interface AuthState {
-  sessionString: string | null;
   user: TelegramUser | null;
-  setSession: (sessionString: string) => void;
   setUser: (user: TelegramUser) => void;
   logout: () => void;
 }
@@ -21,11 +19,18 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      sessionString: null,
       user: null,
-      setSession: (sessionString) => set({ sessionString }),
       setUser: (user) => set({ user }),
-      logout: () => set({ sessionString: null, user: null }),
+      // Client-side logout: clear user from store + call the server to clear the cookie
+      logout: async () => {
+        set({ user: null }); // Optimistic: clear UI state immediately
+        try {
+          await fetch('/api/tg/auth/logout', { method: 'POST' });
+        } catch (error) {
+          console.error('Failed to logout on server:', error);
+          // Client state is already cleared; session may persist server-side
+        }
+      },
     }),
     {
       name: 'tg-auth-storage',

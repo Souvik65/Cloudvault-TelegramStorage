@@ -29,7 +29,7 @@ interface FeedbackModalProps {
 }
 
 export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
-  const { user, sessionString } = useAuthStore();
+  const { user } = useAuthStore();
   const [type, setType] = useState<FeedbackType>('feedback');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -53,10 +53,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     try {
       const res = await fetch('/api/tg/feedback', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tg-session': sessionString!,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
           subject: subject.trim(),
