@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useFileStore } from '@/store/use-file-store';
+import { useFileStore, type FileFilterType } from '@/store/use-file-store';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useUIStore } from '@/store/use-ui-store';
 import {
@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { formatSize } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
+import Image from "next/image";
 
 const TELEGRAM_DIRECT_PATH = '/__tg_direct__';
 const VIRTUAL_FOLDER_ID = -1;
@@ -79,9 +80,16 @@ function getFileIcon(mimeType: string, name: string, size: 'sm' | 'md' | 'lg' = 
 
 
 export function FileList() {
-  const { files, setFiles, currentFolder, setCurrentFolder, searchQuery, filterType, setFilterType, filterGlobal, setFilterGlobal, isLoading, setLoading, setError, storageChannelId, storageChannelName } = useFileStore();
-  const { sessionString } = useAuthStore();
+  const { 
+    files, setFiles, appendFiles, currentFolder, setCurrentFolder, 
+    searchQuery, filterType, setFilterType, filterGlobal, setFilterGlobal, 
+    isLoading, setLoading, setError, storageChannelId, storageChannelName,
+    pagination, setPagination, channelStats, fetchStats, updateStatsOptimistically,
+    updateStatsOptimisticallyBatch, addFileOptimistically
+  } = useFileStore();
+  const { user, logout } = useAuthStore();
   const { viewMode, openRightPanel, setSelectedFileForDetails, sortBy, setSortBy, starred, toggleStarred, activeSection, setActiveSection } = useUIStore();
+  const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<number[]>([]);
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -100,6 +108,7 @@ export function FileList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const lastSelectedId = useRef<number | null>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Close sort dropdown on outside click
@@ -119,7 +128,10 @@ export function FileList() {
   }, []);
 
   useEffect(() => {
-    return () => { if (previewUrl) window.URL.revokeObjectURL(previewUrl); };
+    return () => { 
+      if (previewUrl) window.URL.revokeObjectURL(previewUrl); 
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
   }, [previewUrl]);
 
   useEffect(() => {
@@ -158,9 +170,9 @@ export function FileList() {
     previewAbortRef.current = controller;
     try {
       if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
-      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
-        headers: { 'x-tg-session': sessionString! },
+      const res = await fetch(`/api/tg/download?channelId=${encodeURIComponent(storageChannelId)}&messageId=${file.id}`, {
         signal: controller.signal,
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to load preview');
       const blob = await res.blob();
@@ -189,27 +201,80 @@ export function FileList() {
     setDocxHtml(null);
   };
 
-  // Fetch files
+  // Fetch files whenever the channel or folder changes
   useEffect(() => {
-    if (!sessionString) return;
+    if (!user) return;
     const fetchFiles = async () => {
       setLoading(true);
+      setPagination({ hasMore: false, nextOffsetId: null });
       try {
-        const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`, { headers: { 'x-tg-session': sessionString } });
+        const res = await fetch(`/api/tg/files?channelId=${encodeURIComponent(storageChannelId)}`, { cache: 'no-store', credentials: 'include' });
+        
         if (res.status === 401) {
-          useAuthStore.getState().logout();
+          logout();
           return;
         }
+        
+        if (!res.ok) throw new Error('Failed to fetch files');
+        
         const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        setFiles(data.files);
-      } catch (error: any) {
-        setError(error.message);
-        toast.error('Failed to load files');
-      } finally { setLoading(false); }
+        const apiFiles = Array.isArray(data.files) ? data.files : [];
+        
+        setFiles(apiFiles);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to fetch files.');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchFiles();
-  }, [sessionString, setFiles, setLoading, setError, storageChannelId]);
+  }, [user, logout, setFiles, setLoading, setError, storageChannelId, setPagination, currentFolder]);
+
+  // Load More logic (Legacy/No-op since hasMore is always false now)
+  const loadMore = async () => {
+    if (!pagination.hasMore || isMoreLoading) return;
+    setIsMoreLoading(true);
+    try {
+      const url = new URL(`/api/tg/files`, window.location.origin);
+      url.searchParams.set('channelId', storageChannelId);
+      if (pagination.nextOffsetId) {
+        url.searchParams.set('offsetId', String(pagination.nextOffsetId));
+      }
+      const res = await fetch(url.toString(), { cache: 'no-store', credentials: 'include' });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      appendFiles(data.files);
+      setPagination(data.pagination);
+    } catch (error: any) {
+      toast.error('Failed to load more files');
+    } finally {
+      setIsMoreLoading(false);
+    }
+  };
+  // Infinite scroll sentinel — stable observer that doesn't re-fire on every state change
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMoreRef.current(); },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  // Re-create observer only when hasMore toggles (sentinel mounts/unmounts)
+  }, [pagination.hasMore]);
 
   // Drag-and-drop upload
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -229,23 +294,49 @@ export function FileList() {
         formData.append('channelId', storageChannelId);
         const res = await fetch('/api/tg/files', {
           method: 'POST',
-          headers: { 'x-tg-session': sessionString! },
+          credentials: 'include',
           body: formData,
         });
         if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Upload failed'); }
+        
+        // Optimistic update: Atomic addition to list and stats
+        const newFile = {
+          id: -(Date.now() + i), // Negative temp ID to avoid collision with real message IDs
+          _isOptimistic: true, // Flag for identification during reconciliation
+          name: file.name,
+          size: file.size,
+          mimeType: file.type,
+          uploadDate: Date.now(),
+          folderPath: currentFolder,
+          hasDocument: true,
+        };
+        addFileOptimistically(newFile);
+
         setUploadProgress(((i + 1) / acceptedFiles.length) * 100);
       }
       toast.success(`${acceptedFiles.length} file${acceptedFiles.length > 1 ? 's' : ''} uploaded`);
-      const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`, { headers: { 'x-tg-session': sessionString! } });
-      const data = await res.json();
-      if (!data.error) setFiles(data.files);
+      
+      // Wait a bit for Telegram to index, then background sync
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = setTimeout(async () => {
+        try {
+          fetchStats(storageChannelId);
+          const res = await fetch(`/api/tg/files?channelId=${encodeURIComponent(storageChannelId)}`, { cache: 'no-store', credentials: 'include' });
+          const data = await res.json();
+          if (!data.error) setFiles(data.files);
+        } catch (err) {
+          console.error('Background sync failed:', err);
+        } finally {
+          syncTimeoutRef.current = null;
+        }
+      }, 1500);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [currentFolder, sessionString, storageChannelId, setFiles]);
+  }, [currentFolder, storageChannelId, setFiles, fetchStats, addFileOptimistically]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -309,7 +400,18 @@ export function FileList() {
         if (searchQuery) {
           result = files.filter(f => f.hasDocument && f.name?.toLowerCase().includes(searchQuery.toLowerCase()));
         } else if (currentFolder === TELEGRAM_DIRECT_PATH) {
-          result = files.filter(f => f.isDirectUpload && f.hasDocument);
+          if (!searchQuery && filterType === 'all') {
+            // Show virtual category folders
+            const categories = [
+              { id: 'v-images', name: 'Images', virtualCategory: 'images', isVirtualChannelFolder: true, folderPath: TELEGRAM_DIRECT_PATH, mimeType: 'folder', hasDocument: false, size: 0, uploadDate: 0 },
+              { id: 'v-videos', name: 'Videos', virtualCategory: 'videos', isVirtualChannelFolder: true, folderPath: TELEGRAM_DIRECT_PATH, mimeType: 'folder', hasDocument: false, size: 0, uploadDate: 0 },
+              { id: 'v-docs', name: 'Documents', virtualCategory: 'documents', isVirtualChannelFolder: true, folderPath: TELEGRAM_DIRECT_PATH, mimeType: 'folder', hasDocument: false, size: 0, uploadDate: 0 },
+              { id: 'v-other', name: 'Other', virtualCategory: 'others', isVirtualChannelFolder: true, folderPath: TELEGRAM_DIRECT_PATH, mimeType: 'folder', hasDocument: false, size: 0, uploadDate: 0 },
+            ];
+            result = categories;
+          } else {
+            result = files.filter(f => f.isDirectUpload && f.hasDocument);
+          }
         } else {
           result = files.filter(f => {
             if (f.isDirectUpload) return false;
@@ -318,13 +420,16 @@ export function FileList() {
           if (currentFolder === '/') {
             const hasDirectUploads = files.some(f => f.isDirectUpload && f.hasDocument);
             if (hasDirectUploads) {
-              const directCount = files.filter(f => f.isDirectUpload && f.hasDocument).length;
+              // Use real count from stats API if available, otherwise fall back to loaded files
+              const directCount = channelStats?.folderCounts?.['__direct__'] 
+                ?? files.filter(f => f.isDirectUpload && f.hasDocument).length;
               result = [
                 ...result,
                 {
                   id: VIRTUAL_FOLDER_ID, name: storageChannelName || 'Telegram Channel',
                   mimeType: 'folder', hasDocument: false, size: 0,
-                  folderPath: '/', uploadDate: 0, isVirtualChannelFolder: true, _directCount: directCount,
+                  folderPath: '/', uploadDate: 0, isVirtualChannelFolder: true, 
+                  virtualCategory: 'all', _directCount: directCount,
                 },
               ];
             }
@@ -346,14 +451,14 @@ export function FileList() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return [...folders, ...sorted];
-  }, [files, currentFolder, searchQuery, filterType, filterGlobal, storageChannelName, sortBy, sortDir, activeSection, starred]);
+  }, [files, currentFolder, searchQuery, filterType, filterGlobal, storageChannelName, sortBy, sortDir, activeSection, starred, channelStats]);
 
   const confirmDelete = (ids: number[]) => {
     setItemsToDelete(ids);
     setDeleteModalOpen(true);
   };
 
-  const executeDelete = async () => {
+  const executeDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
       let allIds = [...itemsToDelete];
@@ -364,24 +469,33 @@ export function FileList() {
         allIds = [...allIds, ...inner.map(f => f.id)];
       }
       allIds = Array.from(new Set(allIds));
-      const res = await fetch(`/api/tg/files?channelId=${storageChannelId}&messageIds=${allIds.join(',')}`, {
-        method: 'DELETE', headers: { 'x-tg-session': sessionString! },
+      const res = await fetch(`/api/tg/files?channelId=${encodeURIComponent(storageChannelId)}&messageIds=${allIds.join(',')}`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Delete failed'); }
+      
+      // Update stats for each deleted file before removing them from local state
+      const deletedFiles = files.filter(f => allIds.includes(f.id));
+      updateStatsOptimisticallyBatch(deletedFiles, 'remove');
+
       setFiles(files.filter(f => !allIds.includes(f.id)));
       clearSelection();
       toast.success('Deleted successfully');
       setDeleteModalOpen(false);
+      // Final sync with server stats
+      fetchStats(storageChannelId);
     } catch (e: any) { toast.error(e.message); } finally {
       setIsDeleting(false);
       setItemsToDelete([]);
     }
-  };
+  }, [itemsToDelete, files, currentFolder, storageChannelId, setFiles, fetchStats, updateStatsOptimisticallyBatch]);
 
   const handleDownload = async (file: any) => {
     try {
-      const res = await fetch(`/api/tg/download?channelId=${storageChannelId}&messageId=${file.id}`, {
-        headers: { 'x-tg-session': sessionString! },
+      const res = await fetch(`/api/tg/download?channelId=${encodeURIComponent(storageChannelId)}&messageId=${file.id}`, {
+        cache: 'no-store',
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
@@ -411,6 +525,20 @@ export function FileList() {
 
   const handleFileClick = (e: React.MouseEvent, file: any) => {
     if (!file.hasDocument && file.mimeType === 'folder') {
+      // If it's a specific category virtual folder, apply the filter instead of just navigating
+      if (file.virtualCategory && file.virtualCategory !== 'all') {
+        const typeMap: Record<string, FileFilterType> = {
+          'images': 'image',
+          'videos': 'video',
+          'documents': 'document',
+          'others': 'other'
+        };
+        setFilterType((typeMap[file.virtualCategory] || 'all') as FileFilterType);
+        if (activeSection !== 'my-files') setActiveSection('my-files');
+        clearSelection();
+        return;
+      }
+
       const newPath = file.isVirtualChannelFolder
         ? TELEGRAM_DIRECT_PATH
         : (currentFolder === '/' ? `/${file.name}` : `${currentFolder}/${file.name}`);
@@ -468,6 +596,23 @@ export function FileList() {
 
   const contextFile = dropdown ? filteredFiles.find(f => f.id === dropdown.fileId) : null;
   const isStarred = (id: number) => starred.includes(id);
+
+  const getFolderCount = (file: any) => {
+    if (file.isVirtualChannelFolder) {
+      const cat = file.virtualCategory;
+      if (cat === 'images') return channelStats?.images ?? file._directCount ?? 0;
+      if (cat === 'videos') return channelStats?.videos ?? file._directCount ?? 0;
+      if (cat === 'documents') return channelStats?.documents ?? file._directCount ?? 0;
+      if (cat === 'others') return channelStats?.others ?? file._directCount ?? 0;
+      return file._directCount ?? 0;
+    }
+    const folderPath = currentFolder === '/' ? `/${file.name}` : `${currentFolder}/${file.name}`;
+    // Prioritize pre-calculated counts from server stats
+    const statsCount = channelStats?.folderCounts?.[folderPath];
+    if (statsCount !== undefined) return statsCount;
+    // Fallback to manual filtering for newly created or un-indexed folders
+    return files.filter(f => f.folderPath === folderPath && f.hasDocument).length;
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -755,12 +900,19 @@ export function FileList() {
                             style={{ background: 'rgba(192,82,42,0.08)' }}>
                             <Folder className="w-8 h-8" style={{ color: 'var(--accent-rust)' }} />
                           </div>
-                          {file._directCount !== undefined && (
-                            <span className="absolute -bottom-1 -right-1 text-[9px] font-bold text-white rounded-full px-1.5 py-0.5 leading-none"
-                              style={{ background: 'var(--accent-rust)' }}>
-                              {file._directCount}
-                            </span>
-                          )}
+                          {(() => {
+                            const realCount = getFolderCount(file);
+                            return realCount > 0 ? (
+                              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold text-white rounded-full px-1.5 py-0.5 shadow-sm border border-black/10"
+                                style={{ 
+                                  background: 'linear-gradient(135deg, var(--accent-rust) 0%, #ff6b6b 100%)',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                  zIndex: 10
+                                }}>
+                                {realCount}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                       ) : (
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -783,9 +935,11 @@ export function FileList() {
                       )}
                       <div className="flex items-center justify-between text-[11px] mt-1" style={{ color: 'var(--text-hint)' }}>
                         <span>
-                          {file.isVirtualChannelFolder
-                            ? `${file._directCount} file${file._directCount !== 1 ? 's' : ''}`
-                            : file.hasDocument ? formatSize(file.size) : 'Folder'}
+                          {(() => {
+                            if (file.hasDocument) return formatSize(file.size);
+                            const cnt = getFolderCount(file);
+                            return `${cnt} file${cnt !== 1 ? 's' : ''}`;
+                          })()}
                         </span>
                         {file.uploadDate ? <span>{format(new Date(file.uploadDate), 'MMM d')}</span> : null}
                       </div>
@@ -819,6 +973,15 @@ export function FileList() {
             </div>
           )}
 
+          {/* Infinite scroll sentinel — triggers loadMore when scrolled into view */}
+          {pagination.hasMore && (
+            <div ref={sentinelRef} className="flex justify-center py-4">
+              {isMoreLoading && (
+                <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-rust)', borderTopColor: 'transparent' }} />
+              )}
+            </div>
+          )}
+
           {/* List View */}
           {filteredFiles.length > 0 && viewMode === 'list' && (
             <FileListView
@@ -831,6 +994,9 @@ export function FileList() {
               onThreeDot={handleThreeDot}
               showPath={!!searchQuery}
               starred={starred}
+              allFiles={files}
+              channelStats={channelStats}
+              currentFolder={currentFolder}
             />
           )}
         </div>
@@ -937,7 +1103,14 @@ export function FileList() {
                 <p>Loading preview...</p>
               </div>
             ) : previewType === 'image' && previewUrl ? (
-              <img src={previewUrl} alt={previewFile?.name} className="max-w-full max-h-full object-contain rounded-lg" />
+              <Image 
+                src={previewUrl} 
+                alt={previewFile?.name || 'Preview'} 
+                fill
+                className="object-contain rounded-lg"
+                unoptimized
+              />
+
             ) : previewType === 'video' && previewUrl ? (
               <video src={previewUrl} controls autoPlay className="max-w-full max-h-full rounded-lg" style={{ maxHeight: 'calc(90vh - 2rem)' }} />
             ) : previewType === 'pdf' && previewUrl ? (

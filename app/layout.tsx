@@ -21,6 +21,34 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const stored = localStorage.getItem('cv-theme');
+                  if (stored) {
+                    const { state } = JSON.parse(stored);
+                    if (state && state.theme) {
+                      document.documentElement.setAttribute('data-theme', state.theme);
+                      return;
+                    }
+                  }
+                  // Optional: Fallback to system preference if no user setting
+                  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                } catch (e) {
+                  console.error('Theme initialization failed:', e);
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased" suppressHydrationWarning>
         <ThemeProvider>{children}</ThemeProvider>
         <Analytics />

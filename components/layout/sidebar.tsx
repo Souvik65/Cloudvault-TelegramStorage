@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/use-auth-store';
-import { useFileStore, FileMetadata } from '@/store/use-file-store';
+import { useFileStore } from '@/store/use-file-store';
 import { useUIStore } from '@/store/use-ui-store';
 import { Button } from '@/components/ui/button';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
@@ -15,43 +15,28 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { formatSize } from '@/lib/utils';
+import Image from "next/image";
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
-  const { files, currentFolder, setCurrentFolder, setFilterType, setFilterGlobal, filterType } = useFileStore();
+  const { channelStats, fetchStats, currentFolder, setCurrentFolder, setFilterType, setFilterGlobal, filterType, storageChannelId } = useFileStore();
   const { openRightPanel, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapsed, activeSection, setActiveSection, starred } = useUIStore();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const closeSidebarOnMobile = () => setSidebarOpen(false);
 
-  const totalStorage = files.reduce((acc, file) => acc + (file.size || 0), 0);
-  const totalStorageFormatted = formatSize(totalStorage);
+  // Fetch real storage analytics from dedicated endpoint
+  useEffect(() => {
+    if (!user) return;
+    fetchStats(storageChannelId);
+  }, [user, storageChannelId, fetchStats]);
 
-  const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic', 'gif', 'bmp', 'tiff'];
-  const VIDEO_EXTS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'];
-  const DOC_EXTS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv', 'txt', 'rtf', 'odt', 'ods', 'odp'];
-  const getExt = (name: string) => name?.split('.').pop()?.toLowerCase() ?? '';
-  const isImageFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('image/') || IMAGE_EXTS.includes(getExt(f.name)));
-  const isVideoFile = (f: FileMetadata) => f.hasDocument && (f.mimeType?.startsWith('video/') || VIDEO_EXTS.includes(getExt(f.name)));
-  const isDocumentFile = (f: FileMetadata) => f.hasDocument && (
-    f.mimeType === 'application/pdf' ||
-    f.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    f.mimeType === 'application/msword' ||
-    f.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-    f.mimeType === 'application/vnd.ms-powerpoint' ||
-    f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-    f.mimeType === 'application/vnd.ms-excel' ||
-    f.mimeType?.includes('spreadsheet') ||
-    f.mimeType?.includes('presentation') ||
-    f.mimeType === 'text/plain' ||
-    f.mimeType === 'text/csv' ||
-    f.mimeType === 'application/rtf' ||
-    DOC_EXTS.includes(getExt(f.name))
-  );
+  const totalStorageFormatted = channelStats ? formatSize(channelStats.totalSize) : '—';
+  const images    = channelStats?.images    ?? 0;
+  const videos    = channelStats?.videos    ?? 0;
+  const documents = channelStats?.documents ?? 0;
+  const othersCount = channelStats?.others  ?? 0;
 
-  const images = files.filter(isImageFile).length;
-  const videos = files.filter(isVideoFile).length;
-  const documents = files.filter(isDocumentFile).length;
   const starredCount = starred.length;
 
   const navItems = [
@@ -61,6 +46,16 @@ export function Sidebar() {
   ];
 
   const userInitial = user?.firstName?.[0]?.toUpperCase() || 'U';
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/tg/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // Always clear local auth state even if network request fails.
+    } finally {
+      logout();
+    }
+  };
 
   return (
     <motion.div 
@@ -75,7 +70,14 @@ export function Sidebar() {
       <div className={`flex items-center h-16 shrink-0 border-b ${sidebarCollapsed ? 'justify-center px-0' : 'px-4 gap-3'}`}
         style={{ borderColor: 'var(--border)' }}>
         {/* Logo icon */}
-        <img src="/logo.svg" alt="Storage Vault" className="w-9 h-9 rounded-xl shadow-lg shrink-0" />
+        <Image
+          src="/logo.svg"
+          alt="Storage Vault"
+          width={36}   // w-9 = 36px
+          height={36}  // h-9 = 36px
+          priority
+          className="rounded-xl shadow-lg shrink-0"
+        />
         {/* App name (hidden when collapsed) */}
         <AnimatePresence initial={false}>
           {!sidebarCollapsed && (
@@ -295,7 +297,7 @@ export function Sidebar() {
                       <div className="flex items-center gap-2 text-xs transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                         <Filter className="w-3.5 h-3.5" style={{ color: 'var(--text-hint)' }} /> Others
                       </div>
-                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{files.filter(f => f.hasDocument).length - images - videos - documents}</span>
+                      <span className="text-xs font-medium transition-colors" style={{ color: filterType === 'other' ? 'var(--text-primary)' : 'var(--text-muted)' }}>{othersCount}</span>
                     </div>
                   </div>
                 </div>
@@ -310,7 +312,7 @@ export function Sidebar() {
         <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
           {/* Avatar */}
           {user?.profilePhoto ? (
-            <img src={user.profilePhoto} alt={user.firstName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+            <Image src={user.profilePhoto} alt={user.firstName ?? 'Avatar'} width={32} height={32} className="w-8 h-8 rounded-full object-cover shrink-0" unoptimized />
           ) : (
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
               style={{ background: `linear-gradient(135deg, var(--accent-rust), var(--accent-rust-deep))` }}>
@@ -329,7 +331,7 @@ export function Sidebar() {
                   <p className="text-[13px] font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>{user?.firstName} {user?.lastName}</p>
                   <p className="text-[11px] truncate" style={{ color: 'var(--text-hint)' }}>@{user?.username || user?.phone}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={logout} className="shrink-0 w-7 h-7"
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="shrink-0 w-7 h-7"
                   style={{ color: 'var(--text-hint)' }}>
                   <LogOut className="w-3.5 h-3.5" />
                 </Button>

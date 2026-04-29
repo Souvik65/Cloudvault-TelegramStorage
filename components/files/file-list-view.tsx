@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   FileIcon, Folder, Download, Trash2, Eye, Image as ImageIcon, Video, FileText,
@@ -8,6 +9,13 @@ import {
 import { format } from 'date-fns';
 import { formatSize } from '@/lib/utils';
 import { FileMetadata } from '@/store/use-file-store';
+
+interface ChannelStats {
+  images?: number;
+  videos?: number;
+  documents?: number;
+  others?: number;
+}
 
 interface FileListViewProps {
   files: FileMetadata[];
@@ -19,6 +27,9 @@ interface FileListViewProps {
   onThreeDot: (e: React.MouseEvent, file: FileMetadata) => void;
   showPath?: boolean;
   starred: number[];
+  allFiles: FileMetadata[];
+  channelStats: ChannelStats | null;
+  currentFolder: string;
 }
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'heic'];
@@ -50,73 +61,106 @@ function getIcon(mimeType: string, name: string) {
 
 export function FileListView({
   files, selectedFiles, onFileClick, onDownload, onDelete, onPreview,
-  onThreeDot, showPath, starred
-}: FileListViewProps) {
-  return (
-    <div className="rounded-2xl overflow-hidden border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest"
-        style={{ background: 'var(--bg-hover)', borderBottom: '1px solid var(--border)', color: 'var(--text-hint)' }}>
-        <span className="w-8 shrink-0" />
-        <span className="flex-1 min-w-0">Name</span>
-        <span className="w-28 text-right hidden md:block shrink-0">Modified</span>
-        <span className="w-20 text-right hidden sm:block shrink-0">Size</span>
-        <span className="w-8 shrink-0" />
-      </div>
+    onThreeDot, showPath, starred, allFiles, channelStats, currentFolder
+  }: FileListViewProps) {
+    // Pre-compute folder counts for better performance
+    const folderFileCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      for (const f of allFiles) {
+        if (f.folderPath && f.mimeType !== 'folder') {
+          counts[f.folderPath] = (counts[f.folderPath] ?? 0) + 1;
+        }
+      }
+      return counts;
+    }, [allFiles]);
 
-      {/* Rows */}
-      {files.map((file, i) => {
-        const isSelected = selectedFiles.includes(file.id);
-        const isFileStar = starred.includes(file.id);
-        return (
-          <motion.div
-            key={file.id}
-            data-file-card
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.015, duration: 0.18 }}
-
-            className={`group flex items-center gap-3 px-4 py-2.5 border-b cursor-pointer transition-all duration-150`}
-            style={{
-              borderColor: 'var(--border)',
-              background: isSelected ? 'var(--accent-rust-tint)' : 'transparent',
-            }}
-            onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-            onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
-            onClick={e => onFileClick(e, file)}
-          >
-            {/* Icon */}
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'var(--bg-hover)' }}>
-              {getIcon(file.mimeType, file.name)}
-            </div>
-
-            {/* Name */}
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <div className="min-w-0">
-                <p className="text-[13px] truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
-                {showPath && file.folderPath && file.folderPath !== '/' && (
-                  <span className="text-[10px] flex items-center gap-0.5 mt-0.5" style={{ color: 'var(--text-hint)' }}>
-                    <Folder className="w-2.5 h-2.5 shrink-0" />{file.folderPath}
-                  </span>
-                )}
-                {/* Mobile: date & size */}
-                <p className="text-[11px] sm:hidden mt-0.5" style={{ color: 'var(--text-hint)' }}>
-                  {file.hasDocument ? formatSize(file.size) : 'Folder'}
-                  {file.uploadDate ? ` · ${format(new Date(file.uploadDate), 'MMM d, yyyy')}` : ''}
-                </p>
+    return (
+      <div className="rounded-2xl overflow-hidden border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest"
+          style={{ background: 'var(--bg-hover)', borderBottom: '1px solid var(--border)', color: 'var(--text-hint)' }}>
+          <span className="w-8 shrink-0" />
+          <span className="flex-1 min-w-0">Name</span>
+          <span className="w-28 text-right hidden md:block shrink-0">Modified</span>
+          <span className="w-20 text-right hidden sm:block shrink-0">Size</span>
+          <span className="w-8 shrink-0" />
+        </div>
+  
+        {/* Rows */}
+        {files.map((file, i) => {
+          const isSelected = selectedFiles.includes(file.id);
+          const isFileStar = starred.includes(file.id);
+          const isFolder = !file.hasDocument && (!file.mimeType || file.mimeType === 'folder');
+  
+          // Calculate count for folders
+          let folderCount: string | number = '—';
+          if (isFolder) {
+            const folderPath = file.isVirtualChannelFolder
+              ? null
+              : (currentFolder === '/' ? `/${file.name}` : `${currentFolder}/${file.name}`);
+            
+            let realCount = file._directCount ?? 0;
+            if (file.isVirtualChannelFolder) {
+              const cat = file.virtualCategory;
+              if (cat === 'images') realCount = channelStats?.images ?? realCount;
+              else if (cat === 'videos') realCount = channelStats?.videos ?? realCount;
+              else if (cat === 'documents') realCount = channelStats?.documents ?? realCount;
+              else if (cat === 'others') realCount = channelStats?.others ?? realCount;
+            } else if (folderPath) {
+              realCount = folderFileCounts[folderPath] ?? 0;
+            }
+            folderCount = realCount > 0 ? `${realCount} file${realCount > 1 ? 's' : ''}` : 'Empty';
+          }
+  
+          return (
+            <motion.div
+              key={file.id}
+              data-file-card
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.015, duration: 0.18 }}
+  
+              className={`group flex items-center gap-3 px-4 py-2.5 border-b cursor-pointer transition-all duration-150`}
+              style={{
+                borderColor: 'var(--border)',
+                background: isSelected ? 'var(--accent-rust-tint)' : 'transparent',
+              }}
+              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+              onClick={e => onFileClick(e, file)}
+            >
+              {/* Icon */}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'var(--bg-hover)' }}>
+                {getIcon(file.mimeType, file.name)}
               </div>
-              {isFileStar && <Star className="w-3 h-3 shrink-0" style={{ color: 'var(--accent-rust)', fill: 'var(--accent-rust)' }} />}
-            </div>
-
-            {/* Date */}
-            <span className="w-28 text-right text-[12px] hidden md:block shrink-0" style={{ color: 'var(--text-hint)' }}>
-              {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '—'}
-            </span>
-            {/* Size */}
-            <span className="w-20 text-right text-[12px] hidden sm:block shrink-0" style={{ color: 'var(--text-hint)' }}>
-              {file.hasDocument ? formatSize(file.size) : '—'}
-            </span>
+  
+              {/* Name */}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
+                  {showPath && file.folderPath && file.folderPath !== '/' && (
+                    <span className="text-[10px] flex items-center gap-0.5 mt-0.5" style={{ color: 'var(--text-hint)' }}>
+                      <Folder className="w-2.5 h-2.5 shrink-0" />{file.folderPath}
+                    </span>
+                  )}
+                  {/* Mobile: date & size/count */}
+                  <p className="text-[11px] sm:hidden mt-0.5" style={{ color: 'var(--text-hint)' }}>
+                    {file.hasDocument ? formatSize(file.size) : folderCount}
+                    {file.uploadDate ? ` · ${format(new Date(file.uploadDate), 'MMM d, yyyy')}` : ''}
+                  </p>
+                </div>
+                {isFileStar && <Star className="w-3 h-3 shrink-0" style={{ color: 'var(--accent-rust)', fill: 'var(--accent-rust)' }} />}
+              </div>
+  
+              {/* Date */}
+              <span className="w-28 text-right text-[12px] hidden md:block shrink-0" style={{ color: 'var(--text-hint)' }}>
+                {file.uploadDate ? format(new Date(file.uploadDate), 'MMM d, yyyy') : '—'}
+              </span>
+              {/* Size / Count */}
+              <span className="w-20 text-right text-[12px] hidden sm:block shrink-0" style={{ color: 'var(--text-hint)' }}>
+                {file.hasDocument ? formatSize(file.size) : folderCount}
+              </span>
 
             {/* Three-dot — always visible on touch, hover-only on desktop */}
             <div className="w-8 flex items-center justify-center shrink-0">

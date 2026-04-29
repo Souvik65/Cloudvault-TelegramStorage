@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Infinity as InfinityIcon, FolderOpen, Shield, Eye, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
@@ -14,27 +14,75 @@ import { RightPanel } from '@/components/layout/right-panel';
 import { SettingsPanel } from '@/components/settings/settings-panel';
 import { FileDetailsPanel } from '@/components/files/file-details-panel';
 import { Toaster } from 'sonner';
+import Image from "next/image";
 
 export default function Home() {
-  const { sessionString, user, setUser, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing...');
   const { rightPanelOpen, closeRightPanel, sidebarOpen, setSidebarOpen } = useUIStore();
   const { theme } = useThemeStore();
 
   useEffect(() => {
-    if (!sessionString || user) return;
-    const controller = new AbortController();
-    fetch('/api/tg/user', {
-      headers: { 'x-tg-session': sessionString },
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!data.error) { setUser(data); }
-        else if (res.status === 401) { logout(); }
-      })
-      .catch((err) => { if (err.name !== 'AbortError') console.error('Failed to fetch user:', err); });
-    return () => controller.abort();
-  }, [sessionString, user, setUser, logout]);
+    let active = true;
+    const checkAuth = async () => {
+      try {
+        // Stage 1: Init
+        if (active) {
+          setProgress(20);
+          setLoadingStatus('Initializing Session...');
+        }
+        await new Promise(r => setTimeout(r, 200));
+        
+        // Stage 2: Fetch
+        if (active) {
+          setProgress(45);
+          setLoadingStatus('Verifying Identity...');
+        }
+        
+        const res = await fetch('/api/tg/user', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          if (res.status === 401 && active) {
+            logout();
+          }
+        } else {
+          const data = await res.json();
+          
+          // Stage 3: Sync
+          if (active) {
+            setProgress(75);
+            setLoadingStatus('Syncing Vault...');
+          }
+
+          if (active && data && !data.error) {
+            setUser(data);
+          }
+        }
+
+        await new Promise(r => setTimeout(r, 300));
+
+        // Stage 4: Ready
+        if (active) {
+          setProgress(100);
+          setLoadingStatus('Ready');
+        }
+        
+        setTimeout(() => {
+          if (active) setAuthChecked(true);
+        }, 200);
+
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        if (active) setAuthChecked(true);
+      }
+    };
+    checkAuth();
+    return () => { active = false; };
+  }, [setUser, logout]);
 
   const rightPanelTitle = rightPanelOpen === 'settings' ? 'Settings' : rightPanelOpen === 'file-details' ? 'File Details' : '';
 
@@ -43,19 +91,160 @@ export default function Home() {
   const loginSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (sessionString) return;
+    if (user) return;
     window.scrollTo(0, 0);
     const onScroll = () => { if (window.scrollY > 80) setShowScrollHint(false); };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [sessionString]);
+  }, [user]);
 
   const scrollToLogin = () => {
     setShowScrollHint(false);
     loginSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (!sessionString) {
+  // Memoize random particles to avoid "impure function" errors during re-renders
+  const particles = useMemo(() => [...Array(6)].map((_, i) => ({
+    id: i,
+    x: (i * 17.5) % 100 + '%', // Deterministic spread
+    duration: 5 + (i * 0.8),
+    delay: i * 0.5
+  })), []);
+
+  if (!authChecked) {
+    return (
+      <main 
+        className="min-h-dvh flex flex-col items-center justify-center relative overflow-hidden" 
+        style={{ background: 'var(--bg-body)' }}
+      >
+        {/* Animated Background Orbs */}
+        <div className="absolute inset-0 z-0">
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.2, 0.1] 
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-1/4 -left-1/4 w-full h-full rounded-full"
+            style={{ background: 'radial-gradient(circle, var(--accent-color) 0%, transparent 70%)', filter: 'blur(100px)' }}
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              opacity: [0.05, 0.15, 0.05] 
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -bottom-1/4 -right-1/4 w-full h-full rounded-full"
+            style={{ background: 'radial-gradient(circle, var(--accent-teal-border) 0%, transparent 70%)', filter: 'blur(100px)' }}
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center gap-8">
+          <div className="relative">
+            {/* Outer Glow */}
+            <motion.div
+              animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 rounded-full blur-2xl opacity-20"
+              style={{ background: 'var(--accent-color)' }}
+            />
+            
+            {/* Logo Container */}
+            <motion.div
+              initial={{ rotate: -5, scale: 0.9 }}
+              animate={{ rotate: 5, scale: 1 }}
+              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              className="relative w-28 h-28 rounded-[2rem] border border-white/10 flex items-center justify-center shadow-2xl"
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.03)',
+                backdropFilter: 'blur(16px)',
+              }}
+            >
+              <Image 
+                src="/logo.svg" 
+                alt="Storage Vault Logo" 
+                width={64} 
+                height={64} 
+                priority
+                className="drop-shadow-[0_0_15px_var(--accent-color)]"
+              />
+            </motion.div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3">
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-2xl font-bold tracking-tight text-[var(--text-main)]"
+            >
+              Storage Vault
+            </motion.h2>
+            
+            <div className="flex flex-col items-center gap-5">
+              {/* Dynamic Loading System */}
+              <div className="w-56 group">
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative backdrop-blur-sm border border-white/5">
+                  <motion.div 
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5, ease: "circOut" }}
+                    className="absolute top-0 bottom-0 left-0 shadow-[0_0_15px_var(--accent-color)]"
+                    style={{ background: 'var(--accent-color)' }}
+                  />
+                  {/* Glass highlight effect */}
+                  <motion.div 
+                    animate={{ left: ['-100%', '100%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-0 bottom-0 w-24 opacity-30"
+                    style={{ background: 'linear-gradient(90deg, transparent, white, transparent)' }}
+                  />
+                </div>
+                
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <AnimatePresence mode="wait">
+                    <motion.p 
+                      key={loadingStatus}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-[10px] font-bold tracking-[0.3em] uppercase"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {loadingStatus}
+                    </motion.p>
+                  </AnimatePresence>
+                  
+                  <motion.span 
+                    className="text-[10px] font-mono opacity-40 font-bold"
+                    style={{ color: 'var(--text-main)' }}
+                  >
+                    {Math.round(progress)}%
+                  </motion.span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Particles */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          {particles.map((p) => (
+            <motion.div
+              key={p.id}
+              initial={{ x: p.x, y: '110%' }}
+              animate={{ y: '-10%' }}
+              transition={{ duration: p.duration, repeat: Infinity, ease: "linear", delay: p.delay }}
+              className="absolute w-1 h-1 rounded-full bg-white"
+            />
+          ))}
+        </div>
+      </main>
+    );
+  }
+
+  if (!user) {
     const features = [
       { icon: InfinityIcon, color: 'var(--accent-rust)', title: 'Unlimited Storage', desc: 'There is no storage cap. Store as much as you want, completely free.' },
       { icon: FolderOpen,   color: 'var(--accent-teal)', title: 'Folder Organisation', desc: 'Create nested folders and keep all your files neatly structured.' },
@@ -95,10 +284,17 @@ export default function Home() {
         </div>
 
         {/* LEFT — Hero + features */}
-        {/* @All reight reserved Souvik Debnath 2026  */}
-        <div className="relative z-10 min-h-dvh lg:min-h-0 flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 lg:py-20">
+        {/* © All rights reserved Souvik Debnath 2026 */}        <div className="relative z-10 min-h-dvh lg:min-h-0 flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 lg:py-20">
           <motion.div className="flex items-center gap-3 mb-10" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
-            <img src="/logo.svg" alt="Storage Vault" className="w-12 h-12 rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }} />
+            <Image
+              src="/logo.svg"
+              alt="Storage Vault"
+              width={48}
+              height={48}
+              priority     // ensures it loads fast (important for logos)
+              className="rounded-2xl shadow-lg"
+              style={{ boxShadow: '0 4px 12px rgba(192,82,42,0.2)' }}
+            />
             <div className="flex flex-col">
               <span className="text-2xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>Storage Vault</span>
               <span className="text-[10px] font-semibold text-white rounded px-1.5 py-0.5 self-start leading-none mt-1 tracking-wide uppercase"

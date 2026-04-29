@@ -115,7 +115,7 @@ const DEFAULT_COUNTRY = COUNTRIES.find(c => c.code === 'US')!;
 
 // ─── OTP Input ─────────────────────────────────────────────────────────────────
 
-const OTPInput = memo(function OTPInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+const OTPInput = memo(function OTPInput({ value, onChange, disabled, error }: { value: string; onChange: (v: string) => void; disabled?: boolean; error?: boolean }) {
   const OTP_LENGTH = 5;
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -159,7 +159,12 @@ const OTPInput = memo(function OTPInput({ value, onChange, disabled }: { value: 
   };
 
   return (
-    <div className="flex gap-2 sm:gap-3 justify-center" dir="ltr">
+    <motion.div 
+      className="flex gap-2 sm:gap-3 justify-center" 
+      dir="ltr"
+      animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
+      transition={{ duration: 0.4 }}
+    >
       {Array.from({ length: OTP_LENGTH }).map((_, i) => (
         <motion.div
           key={i}
@@ -185,26 +190,27 @@ const OTPInput = memo(function OTPInput({ value, onChange, disabled }: { value: 
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
             style={{
-              background: chars[i] ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)',
-              borderColor: chars[i] ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)',
-              color: 'var(--text-primary)',
-              boxShadow: chars[i] ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)',
+              background: error ? 'color-mix(in srgb, var(--error) 5%, var(--bg-card))' : (chars[i] ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)'),
+              borderColor: error ? 'var(--error)' : (chars[i] ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)'),
+              color: error ? 'var(--error)' : 'var(--text-primary)',
+              boxShadow: error ? '0 0 12px color-mix(in srgb, var(--error) 20%, transparent)' : (chars[i] ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)'),
             }}
             onFocus={e => {
                e.target.select();
-               e.target.style.borderColor = 'var(--accent-rust)'; 
+               e.target.style.borderColor = error ? 'var(--error)' : 'var(--accent-rust)'; 
                e.target.style.background = 'var(--bg-card)';
-               e.target.style.boxShadow = '0 0 0 4px color-mix(in srgb, var(--accent-rust) 20%, transparent)';
+               e.target.style.boxShadow = error ? '0 0 12px color-mix(in srgb, var(--error) 20%, transparent)' : '0 0 0 4px color-mix(in srgb, var(--accent-rust) 20%, transparent)';
             }}
             onBlur={e => {
-               e.target.style.borderColor = chars[i] ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)'; 
-               e.target.style.background = chars[i] ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)';
-               e.target.style.boxShadow = chars[i] ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)';
+               const hasValue = !!e.target.value;
+               e.target.style.borderColor = error ? 'var(--error)' : (hasValue ? 'var(--accent-rust)' : 'color-mix(in srgb, var(--border) 60%, transparent)'); 
+               e.target.style.background = error ? 'color-mix(in srgb, var(--error) 5%, var(--bg-card))' : (hasValue ? 'var(--bg-card)' : 'color-mix(in srgb, var(--bg-input) 50%, transparent)');
+               e.target.style.boxShadow = error ? '0 0 12px color-mix(in srgb, var(--error) 20%, transparent)' : (hasValue ? '0 4px 12px var(--shadow-sm)' : 'inset 0 2px 4px color-mix(in srgb, var(--shadow-color) 30%, transparent)');
             }}
           />
         </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 });
 
@@ -499,11 +505,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<'phone' | 'code' | 'password'>('phone');
   const [phoneCodeHash, setPhoneCodeHash] = useState('');
-  const [sessionString, setSessionString] = useState('');
   const [loading, setLoading] = useState(false);
   const [direction, setDirection] = useState(1);
 
-  const { setSession, setUser } = useAuthStore();
+  const [errorType, setErrorType] = useState<'none' | 'code' | 'password'>('none');
+  const { setUser } = useAuthStore();
   const hasAutoSubmittedRef = useRef(false);
 
   // Combine country code + local number into full international format
@@ -516,6 +522,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
       if (prev === 'password') return 'code';
       return prev;
     });
+    setErrorType('none');
   }, []);
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -525,17 +532,18 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
       return;
     }
     setLoading(true);
+    setErrorType('none');
     try {
       const res = await fetch('/api/tg/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ phoneNumber }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
       setPhoneCodeHash(data.phoneCodeHash);
-      setSessionString(data.sessionString);
       setDirection(1);
       setStep('code');
       toast.success('Code sent to your Telegram app');
@@ -549,20 +557,31 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
   const handleSignIn = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     setLoading(true);
+    setErrorType('none');
     try {
       const res = await fetch('/api/tg/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           phoneNumber,
           phoneCodeHash,
           phoneCode,
           password: step === 'password' ? password : undefined,
-          sessionString,
         }),
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      
+      if (data.error) {
+        if (data.code === 'PHONE_CODE_INVALID') {
+          setErrorType('code');
+          setPhoneCode(''); // Clear invalid code
+        } else if (data.code === 'PASSWORD_HASH_INVALID') {
+          setErrorType('password');
+          setPassword(''); // Clear invalid password
+        }
+        throw new Error(data.error);
+      }
 
       if (data.requiresPassword) {
         setDirection(1);
@@ -571,21 +590,21 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
         return;
       }
 
-      setSession(data.sessionString);
-
       const userRes = await fetch('/api/tg/user', {
-        headers: { 'x-tg-session': data.sessionString },
+        cache: 'no-store',
+        credentials: 'include',
       });
       const userData = await userRes.json();
-      if (!userData.error) setUser(userData);
+      if (userData.error) throw new Error(userData.error);
+      setUser(userData);
 
       toast.success('Successfully signed in');
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
-  }, [phoneNumber, phoneCodeHash, phoneCode, password, sessionString, step, setSession, setUser]);
+  }, [phoneNumber, phoneCodeHash, phoneCode, password, step, setUser]);
 
   // Auto-submit when OTP is fully filled
   useEffect(() => {
@@ -597,11 +616,11 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
       hasAutoSubmittedRef.current = false;
       return;
     }
-    if (phoneCode.length === 5 && !loading && !hasAutoSubmittedRef.current) {
+    if (phoneCode.length === 5 && !loading && !hasAutoSubmittedRef.current && errorType !== 'code') {
       hasAutoSubmittedRef.current = true;
       handleSignIn();
     }
-  }, [phoneCode, step, loading, handleSignIn]);
+  }, [phoneCode, step, loading, handleSignIn, errorType]);
 
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? 30 : -30, opacity: 0, scale: 0.96 }),
@@ -773,7 +792,15 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                         <label className="text-xs font-bold uppercase tracking-widest mb-4 block" style={{ color: 'var(--text-muted)' }}>
                           Enter Secret Code
                         </label>
-                        <OTPInput value={phoneCode} onChange={setPhoneCode} disabled={loading} />
+                        <OTPInput 
+                          value={phoneCode} 
+                          onChange={(v) => {
+                            setPhoneCode(v);
+                            if (errorType === 'code') setErrorType('none');
+                          }} 
+                          disabled={loading} 
+                          error={errorType === 'code'} 
+                        />
                       </div>
 
                       <p className="text-[14px] text-center font-medium leading-relaxed max-w-[280px] mx-auto" style={{ color: 'var(--text-secondary)' }}>
@@ -845,13 +872,20 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                       <label className="text-xs font-bold uppercase tracking-widest pl-1" style={{ color: 'var(--text-muted)' }}>
                         Two-Factor Password
                       </label>
-                      <div className="relative shadow-sm rounded-2xl group focus-within:shadow-md transition-shadow">
+                      <motion.div 
+                        className="relative shadow-sm rounded-2xl group focus-within:shadow-md transition-shadow"
+                        animate={errorType === 'password' ? { x: [-10, 10, -10, 10, 0] } : {}}
+                        transition={{ duration: 0.4 }}
+                      >
                         <input
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Your 2FA password"
                           value={password}
                           disabled={loading}
-                          onChange={(e) => setPassword(e.target.value)}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (errorType === 'password') setErrorType('none');
+                          }}
                           autoFocus={!embedded}
                           required
                           spellCheck={false}
@@ -859,12 +893,12 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                             focus:outline-none transition-all duration-200 placeholder:font-normal placeholder:text-[var(--text-hint)]
                             disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent-rust)_25%,transparent)]"
                           style={{
-                            background: 'color-mix(in srgb, var(--bg-input) 30%, transparent)',
-                            borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+                            background: errorType === 'password' ? 'color-mix(in srgb, var(--error) 5%, var(--bg-input))' : 'color-mix(in srgb, var(--bg-input) 30%, transparent)',
+                            borderColor: errorType === 'password' ? 'var(--error)' : 'color-mix(in srgb, var(--border) 60%, transparent)',
                             color: 'var(--text-primary)',
                           }}
-                          onFocus={e => { e.target.style.borderColor = 'var(--accent-rust)'; }}
-                          onBlur={e => { e.target.style.borderColor = 'color-mix(in srgb, var(--border) 60%, transparent)'; }}
+                          onFocus={e => { e.target.style.borderColor = errorType === 'password' ? 'var(--error)' : 'var(--accent-rust)'; }}
+                          onBlur={e => { e.target.style.borderColor = errorType === 'password' ? 'var(--error)' : 'color-mix(in srgb, var(--border) 60%, transparent)'; }}
                         />
                         <button
                           type="button"
@@ -877,7 +911,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
                         >
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
-                      </div>
+                      </motion.div>
                       <p className="text-[12px] font-semibold pl-1 h-5 flex items-center gap-2" style={{ color: 'var(--text-hint)' }}>
                         <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'currentColor' }} />
                         Two-step verification is enabled.
@@ -924,7 +958,7 @@ export function LoginForm({ embedded = false }: { embedded?: boolean }) {
           {/* Footer */}
           <div className="px-6 py-4 sm:px-10 sm:py-5 text-center mt-auto backdrop-blur-md" style={{ borderTop: '1px solid color-mix(in srgb, var(--border) 40%, transparent)', background: 'color-mix(in srgb, var(--bg-body) 60%, transparent)' }}>
             <p className="text-[11px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5 opacity-80" style={{ color: 'var(--text-hint)' }}>
-              <Shield className="w-3.5 h-3.5" /> Secure authentication via Telegram MTProto
+              <Shield className="w-3.5 h-3.5" style={{ color: 'var(--green-500)' }} /> Authentication via Telegram
             </p>
           </div>
         </div>
