@@ -50,6 +50,9 @@
   --scrollbar-thumb: rgba(24, 19, 15, 0.22);
   --scrollbar-hover: rgba(24, 19, 15, 0.35);
   --selection-bg:    rgba(192, 82, 42, 0.15);
+  --green-500:       #22c55e;
+  --error:           #ff4d4f;
+
 
   /* Overlay */
   --overlay-bg: rgba(0, 0, 0, 0.70);
@@ -103,6 +106,8 @@
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-hover: rgba(255, 255, 255, 0.25);
   --selection-bg:    rgba(224, 107, 66, 0.25);
+  --green-500:       #4ade80;
+  --error:           #ff7875;
 
   /* Overlay */
   --overlay-bg: rgba(0, 0, 0, 0.80);

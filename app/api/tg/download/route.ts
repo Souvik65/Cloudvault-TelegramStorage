@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getClient } from '@/lib/tg-client';
 import { Api } from 'telegram';
+import { createRequestId, isAuthKeyUnregistered, safeServerError, safeUnauthorizedSession, withRequestId } from '@/lib/api-error';
+import { getSessionFromRequest } from '@/lib/session';
 
 export async function GET(req: Request) {
+  const requestId = createRequestId();
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return safeUnauthorizedSession(requestId);
     }
 
     const { searchParams } = new URL(req.url);
@@ -21,21 +24,30 @@ export async function GET(req: Request) {
     const messageId = searchParams.get('messageId');
 
     if (!messageId) {
-      return NextResponse.json({ error: 'Missing messageId' }, { status: 400 });
+      return NextResponse.json(withRequestId({ error: 'Missing messageId' }, requestId), { 
+        status: 400,
+        headers: { 'X-Request-Id': requestId }
+      });
     }
 
     const client = await getClient(sessionString);
     const messages = await client.getMessages(channelId, { ids: [Number(messageId)] });
 
     if (!messages || messages.length === 0 || !messages[0].document) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+      return NextResponse.json(withRequestId({ error: 'File not found' }, requestId), { 
+        status: 404,
+        headers: { 'X-Request-Id': requestId }
+      });
     }
 
     const message = messages[0];
     const buffer = await client.downloadMedia(message, {});
 
     if (!buffer) {
-      return NextResponse.json({ error: 'Failed to download file' }, { status: 500 });
+      return NextResponse.json(withRequestId({ error: 'Failed to download file' }, requestId), { 
+        status: 500,
+        headers: { 'X-Request-Id': requestId }
+      });
     }
 
     let contentType = 'application/octet-stream';
@@ -60,13 +72,14 @@ export async function GET(req: Request) {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
         'Content-Length': bufferData.length.toString(),
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
       },
     });
-  } catch (error: any) {
-    console.error('Download file error:', error);
-    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+  } catch (error: unknown) {
+    if (isAuthKeyUnregistered(error)) {
+      return safeUnauthorizedSession(requestId);
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeServerError('Download file error', error, requestId);
   }
 }

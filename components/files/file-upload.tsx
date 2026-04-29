@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFileStore } from '@/store/use-file-store';
-import { useAuthStore } from '@/store/use-auth-store';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';import { UploadCloud, X, File as FileIcon, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,8 +12,7 @@ export function FileUpload({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const { currentFolder, setFiles, files, storageChannelId } = useFileStore();
-  const { sessionString } = useAuthStore();
+  const { currentFolder, setFiles, files, storageChannelId, setPagination } = useFileStore();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFilesToUpload((prev) => [...prev, ...acceptedFiles]);
@@ -53,7 +51,6 @@ export function FileUpload({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           const xhr = new XMLHttpRequest();
           xhr.open('POST', '/api/tg/files');
           xhr.timeout = 300000; // 5 minutes for large files
-          xhr.setRequestHeader('x-tg-session', sessionString!);
 
           xhr.ontimeout = () => reject(new Error('Upload timed out'));
           xhr.upload.onprogress = (event) => {
@@ -87,12 +84,18 @@ export function FileUpload({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       onClose();
 
       // Refresh files
-      const res = await fetch(`/api/tg/files?channelId=${storageChannelId}`, {
-        headers: { 'x-tg-session': sessionString! },
-      });
+      const res = await fetch(`/api/tg/files?channelId=${encodeURIComponent(storageChannelId)}`, { cache: 'no-store' });
+      if (!res.ok) {
+        console.error('Failed to refresh files after upload');
+        return;
+      }
+      
       const data = await res.json();
       if (!data.error) {
         setFiles(data.files);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       }
     } catch (error: any) {
       toast.error(error.message);

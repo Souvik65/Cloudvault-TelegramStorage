@@ -1,66 +1,75 @@
 import { NextResponse } from 'next/server';
 import { getClient } from '@/lib/tg-client';
 import { Api } from 'telegram';
+import { createRequestId, isAuthKeyUnregistered, safeServerError, safeUnauthorizedSession, withRequestId } from '@/lib/api-error';
+import { getSessionFromRequest } from '@/lib/session';
 
 export async function GET(req: Request) {
+  const requestId = createRequestId();
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return safeUnauthorizedSession(requestId);
     }
 
     const { searchParams } = new URL(req.url);
-    let channelId: string | number = searchParams.get('channelId') ?? 'me';
+    let channelId = searchParams.get('channelId');
 
     if (!channelId || channelId === 'undefined' || channelId === 'null') {
       channelId = 'me';
     }
 
-    if (channelId !== 'me' && !isNaN(Number(channelId))) {
-      if (!String(channelId).startsWith('-100')) {
+    if (channelId !== 'me' && !isNaN(Number(channelId)) && Number(channelId) > 0) {
+      if (!channelId.startsWith('-100')) {
         channelId = '-100' + channelId;
       }
     }
 
     const client = await getClient(sessionString);
 
-    // Resolve the entity first — GramJS requires this for numeric channel IDs
-    // that aren't already cached in the session.
     let peer: any = channelId;
     if (channelId !== 'me') {
       try {
         peer = await client.getInputEntity(channelId as any);
       } catch {
-        // If we can't resolve, try fetching dialogs to populate the cache, then retry
         try {
-          await client.getDialogs({ limit: 200 });
+          await client.getDialogs({ limit: 100 });
           peer = await client.getInputEntity(channelId as any);
         } catch (e2: any) {
+          console.error(`[Files] Channel lookup error for ${channelId}:`, e2?.message);
           return NextResponse.json(
-            { error: `Channel not found: ${e2?.message ?? channelId}` },
-            { status: 404 }
+            withRequestId({ error: 'Channel not found' }, requestId),
+            { status: 404, headers: { 'Cache-Control': 'no-store' } }
           );
         }
       }
     }
 
-    // Paginate through all messages to get every file in the channel
-    const allMessages = [];
-    let offsetId = 0;
-    while (true) {
-      const batch = await client.getMessages(peer, { limit: 100, offsetId });
-      if (!batch.length) break;
-      allMessages.push(...batch);
-      offsetId = batch[batch.length - 1].id;
-      // If we got fewer than 100, we've reached the beginning
-      if (batch.length < 100) break;
+    const limit = 500;
+    const offsetIdParam = searchParams.get('offsetId');
+    const offsetId = offsetIdParam ? Number(offsetIdParam) : undefined;
+
+    if (offsetIdParam && (isNaN(offsetId!) || offsetId! < 0)) {
+      return NextResponse.json(
+        withRequestId({ error: 'Invalid offsetId parameter' }, requestId),
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
+    const batch = [];
+    for await (const msg of client.iterMessages(peer, { 
+      limit,
+      offsetId,
+    })) {
+      batch.push(msg);
+    }
+
+    const nextOffsetId = batch.length === limit ? batch[batch.length - 1]?.id : null;
+    const hasMore = nextOffsetId !== null;
 
     const files = [];
 
-    for (const msg of allMessages) {
-      // Include any message that has a document (file uploaded via app or directly to Telegram)
+    for (const msg of batch) {
       if (msg.document) {
         let name = `file-${msg.id}`;
         let folderPath = '/';
@@ -68,7 +77,6 @@ export async function GET(req: Request) {
         let extraMeta: Record<string, any> = {};
         let isDirectUpload = true;
 
-        // Try to parse app-specific metadata from caption
         try {
           const text = msg.message || '';
           if (text.startsWith('{') && text.endsWith('}')) {
@@ -76,16 +84,14 @@ export async function GET(req: Request) {
             name = parsed.name || name;
             folderPath = parsed.folderPath || folderPath;
             uploadDate = parsed.uploadDate || uploadDate;
-            // Spread any other app metadata fields
             const { name: _n, folderPath: _f, uploadDate: _u, ...rest } = parsed;
             extraMeta = rest;
-            isDirectUpload = false; // Has app metadata → uploaded via this app
+            isDirectUpload = false;
           }
-        } catch {
-          // Not app metadata — use fallback values derived from the document itself
+        } catch (parseError) {
+          // Non-JSON message, skip silently
         }
 
-        // Always try to get filename from document attributes as fallback
         if (isDirectUpload) {
           const docAttrs = msg.document.attributes || [];
           const filenameAttr = docAttrs.find(
@@ -109,7 +115,6 @@ export async function GET(req: Request) {
           mimeType: msg.document.mimeType,
         });
       } else if (msg.message) {
-        // Text-only messages that contain app metadata (e.g. folder entries)
         try {
           const text = msg.message;
           if (text.startsWith('{') && text.endsWith('}')) {
@@ -123,27 +128,38 @@ export async function GET(req: Request) {
               mimeType: 'folder',
             });
           }
-        } catch {
-          // Plain text message, not a file/folder entry — skip
-        }
+        } catch {}
       }
     }
+    
+    // Final response with pagination info
 
-    return NextResponse.json({ files });
-  } catch (error: any) {
-    console.error('Get files error:', error);
-    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    return NextResponse.json({ 
+      files,
+      pagination: {
+        hasMore,
+        nextOffsetId,
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+      },
+    });
+  } catch (error: unknown) {
+    if (isAuthKeyUnregistered(error)) {
+      return safeUnauthorizedSession(requestId);
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeServerError('Get files error', error, requestId);
   }
 }
 
 export async function POST(req: Request) {
+  const requestId = createRequestId();
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return safeUnauthorizedSession(requestId);
     }
 
     const formData = await req.formData();
@@ -163,18 +179,27 @@ export async function POST(req: Request) {
     const metadataStr = formData.get('metadata') as string;
 
     if (!metadataStr) {
-      return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
+      return NextResponse.json(withRequestId({ error: 'Missing metadata' }, requestId), { 
+        status: 400,
+        headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId }
+      });
     }
 
     let metadata;
     try {
       metadata = JSON.parse(metadataStr);
     } catch {
-      return NextResponse.json({ error: 'Invalid metadata format' }, { status: 400 });
+      return NextResponse.json(withRequestId({ error: 'Invalid metadata format' }, requestId), { 
+        status: 400,
+        headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId }
+      });
     }
 
     if (!metadata.name || typeof metadata.name !== 'string') {
-      return NextResponse.json({ error: 'Metadata must include a valid name' }, { status: 400 });
+      return NextResponse.json(withRequestId({ error: 'Metadata must include a valid name' }, requestId), { 
+        status: 400,
+        headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId }
+      });
     }
 
     const client = await getClient(sessionString);
@@ -197,21 +222,26 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Upload file error:', error);
-    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    return NextResponse.json({ success: true }, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+      },
+    });
+  } catch (error: unknown) {
+    if (isAuthKeyUnregistered(error)) {
+      return safeUnauthorizedSession(requestId);
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeServerError('Upload file error', error, requestId);
   }
 }
 
 export async function DELETE(req: Request) {
+  const requestId = createRequestId();
   try {
-    const sessionString = req.headers.get('x-tg-session');
+    const sessionString = getSessionFromRequest(req);
     if (!sessionString) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return safeUnauthorizedSession(requestId);
     }
 
     const { searchParams } = new URL(req.url);
@@ -230,7 +260,10 @@ export async function DELETE(req: Request) {
     const messageIdsStr = searchParams.get('messageIds');
 
     if (!messageIdsStr) {
-      return NextResponse.json({ error: 'Missing messageIds' }, { status: 400 });
+      return NextResponse.json(withRequestId({ error: 'Missing messageIds' }, requestId), { 
+        status: 400,
+        headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId }
+      });
     }
 
     const messageIds = messageIdsStr.split(',').map(Number).filter(id => !isNaN(id) && id > 0);
@@ -238,12 +271,16 @@ export async function DELETE(req: Request) {
 
     await client.deleteMessages(channelId, messageIds, { revoke: true });
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Delete file error:', error);
-    if (error?.message?.includes('AUTH_KEY_UNREGISTERED') || error?.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+    return NextResponse.json({ success: true }, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+      },
+    });
+  } catch (error: unknown) {
+    if (isAuthKeyUnregistered(error)) {
+      return safeUnauthorizedSession(requestId);
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeServerError('Delete file error', error, requestId);
   }
 }
